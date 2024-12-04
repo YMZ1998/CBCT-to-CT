@@ -56,7 +56,7 @@ if __name__ == '__main__':
     epoch_total = config['epoch_total']
 
     batch_size = config['batch_size']
-    device = 'cuda:' + config['device_num']
+    device = get_device()
     learning_rate = config['learning_rate']
     model_path = config['model_path']
     last_checkpoint_name = config['last_checkpoint_name']
@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     # 实例化 ModelTrainer
     model_trainer = ModelTrainer(
-        model_path='path_to_save_model',  # 模型保存路径
+        model_path=model_path,
         stage1=stage1,  # 第一阶段模型
         stage2=stage2,  # 第二阶段模型
         resbranch=resbranch,  # 分支模型

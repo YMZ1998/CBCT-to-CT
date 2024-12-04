@@ -95,24 +95,24 @@ class ModelTester:
             for iteration, (samp_img, samp_lct) in enumerate(tqdm(data_loader_test)):
 
                 samp_img_gpu = samp_img.to(self.device)
-                samp_mr_gpu, samp_ct_gpu, samp_ct2_gpu, mask_gpu = torch.split(samp_img_gpu, [5, 1, 1, 1], dim=1)
+                origin_mr, origin_ct, enhance_ct, mask = torch.split(samp_img_gpu, [5, 1, 1, 1], dim=1)
 
-                out_global = self.stage1(samp_mr_gpu * mask_gpu)
+                out_global = self.stage1(origin_mr * mask)
 
                 if epoch <= self.epoch_stage1:
-                    metrics = self.process_output(out_global, None, samp_mr_gpu, mask_gpu, samp_ct_gpu, samp_ct2_gpu,
+                    metrics = self.process_output(out_global, None, origin_mr, mask, origin_ct, enhance_ct,
                                                   samp_lct,
                                                   epoch, iteration, slice_index, stage=1, metrics=metrics)
                 elif epoch <= self.epoch_stage2:
-                    out_second = self.stage2(out_global * mask_gpu)
-                    metrics = self.process_output(out_global, out_second, samp_mr_gpu, mask_gpu, samp_ct_gpu,
-                                                  samp_ct2_gpu, samp_lct,
+                    out_second = self.stage2(out_global * mask)
+                    metrics = self.process_output(out_global, out_second, origin_mr, mask, origin_ct,
+                                                  enhance_ct, samp_lct,
                                                   epoch, iteration, slice_index, stage=2, metrics=metrics)
                 else:
-                    out_second = self.stage2(out_global * mask_gpu)
-                    out_third = self.resbranch(samp_mr_gpu * mask_gpu)
+                    out_second = self.stage2(out_global * mask)
+                    out_third = self.resbranch(origin_mr * mask)
                     out = out_second + out_third
-                    metrics = self.process_output(out, out_second, samp_mr_gpu, mask_gpu, samp_ct_gpu, samp_ct2_gpu,
+                    metrics = self.process_output(out, out_second, origin_mr, mask, origin_ct, enhance_ct,
                                                   samp_lct, epoch,
                                                   iteration, slice_index, stage=3, metrics=metrics)
 
