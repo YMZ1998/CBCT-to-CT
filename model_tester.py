@@ -1,9 +1,9 @@
-import torch
-import numpy as np
 import matplotlib.pyplot as plt
+import torch
 from tqdm import tqdm
-from post_process import process
+
 from image_metrics import *
+from post_process import process
 
 synthrad_metrics_stage1 = ImageMetrics(dynamic_range=[-150., 850.])
 synthrad_metrics_stage2 = ImageMetrics(dynamic_range=[-1024., 3000.])
@@ -19,7 +19,7 @@ class ModelTester:
         self.epoch_stage2 = epoch_stage2
         self.logger = logger
 
-    def save_visualization(self, epoch, iteration, slice_index, metrics, show_mr, show_ct, show_out1, show_mask,
+    def save_visualization(self, epoch, iteration, slice_index, metrics, show_mr, show_origin_ct, show_stage1_out, mask,
                            show_ct2=None, show_out2=None):
         """保存视觉化结果"""
         fig = plt.figure(figsize=(15, 3), dpi=100, tight_layout=True)
@@ -31,11 +31,11 @@ class ModelTester:
 
         plt.subplot(1, 5, 2)
         plt.axis("off")
-        plt.imshow(show_ct, cmap="gray")
+        plt.imshow(show_origin_ct, cmap="gray")
 
         plt.subplot(1, 5, 3)
         plt.axis("off")
-        plt.imshow(show_out1 * show_mask, cmap="gray")
+        plt.imshow(show_stage1_out * mask, cmap="gray")
 
         if show_ct2 is not None:
             plt.subplot(1, 5, 4)
@@ -45,39 +45,43 @@ class ModelTester:
         if show_out2 is not None:
             plt.subplot(1, 5, 5)
             plt.axis("off")
-            plt.imshow(show_out2 * show_mask, cmap="gray")
+            plt.imshow(show_out2 * mask, cmap="gray")
 
         plt.subplots_adjust(top=0.85)
         plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
         plt.clf()
         plt.close(fig)
 
-    def process_output(self, out_global, out_second, samp_mr_gpu, mask_gpu, samp_ct_gpu, samp_ct2_gpu, samp_lct, epoch,
+    def process_output(self, stage1_out, stage2_out, origin_mr, origin_mask, origin_ct, enhance_ct, origin_location,
+                       epoch,
                        iteration,
                        slice_index, stage, metrics):
         """处理每一阶段的输出、计算指标并保存可视化结果"""
         if stage == 1:
-            out_cal, ct_cal, mask_cal = process(out_global, samp_ct2_gpu, samp_lct, mask_gpu, min_v=-150, max_v=850)
-            m_global = synthrad_metrics_stage1.score_patient(ct_cal, out_cal, mask_cal)
+            out_cal, ct_cal, mask_cal = process(stage1_out, enhance_ct, origin_location, origin_mask, min_v=-150,
+                                                max_v=850)
+            global_metrics = synthrad_metrics_stage1.score_patient(ct_cal, out_cal, mask_cal)
         else:
-            out_cal, ct_cal, mask_cal = process(out_second, samp_ct_gpu, samp_lct, mask_gpu)
-            m_global = synthrad_metrics_stage2.score_patient(ct_cal, out_cal, mask_cal)
+            out_cal, ct_cal, mask_cal = process(stage2_out, origin_ct, origin_location, origin_mask)
+            global_metrics = synthrad_metrics_stage2.score_patient(ct_cal, out_cal, mask_cal)
 
         if iteration == slice_index:
-            show_mr = samp_mr_gpu.detach().cpu().squeeze().numpy()
-            show_ct = samp_ct_gpu.detach().cpu().squeeze().numpy()
-            show_mask = mask_gpu.detach().cpu().squeeze().numpy()
-            show_out1 = out_global.detach().cpu().squeeze().numpy()
-            show_ct2 = samp_ct2_gpu.detach().cpu().squeeze().numpy()
-            show_out2 = out_second.detach().cpu().squeeze().numpy() if out_second is not None else None
+            # 处理和转换图像数据
+            show_mr = origin_mr.detach().cpu().squeeze().numpy()
+            show_origin_ct = origin_ct.detach().cpu().squeeze().numpy()
+            mask = origin_mask.detach().cpu().squeeze().numpy()
+            show_stage1_out = stage1_out.detach().cpu().squeeze().numpy()
+            show_enhanced_ct = enhance_ct.detach().cpu().squeeze().numpy()
+            show_stage2_out = stage2_out.detach().cpu().squeeze().numpy() if stage2_out is not None else None
 
             # 保存图像
-            self.save_visualization(epoch, iteration, slice_index, m_global, show_mr, show_ct, show_out1, show_mask,
-                                    show_ct2, show_out2)
+            self.save_visualization(epoch, iteration, slice_index, global_metrics, show_mr, show_origin_ct,
+                                    show_stage1_out,
+                                    mask, show_enhanced_ct, show_stage2_out)
 
-        metrics[0, 0, iteration] = m_global['psnr']
-        metrics[0, 1, iteration] = m_global['ssim']
-        metrics[0, 2, iteration] = m_global['mae']
+        metrics[0, 0, iteration] = global_metrics['psnr']
+        metrics[0, 1, iteration] = global_metrics['ssim']
+        metrics[0, 2, iteration] = global_metrics['mae']
 
         return metrics
 
@@ -92,28 +96,28 @@ class ModelTester:
         slice_index = 120
 
         with torch.no_grad():
-            for iteration, (samp_img, samp_lct) in enumerate(tqdm(data_loader_test)):
+            for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test)):
 
-                samp_img_gpu = samp_img.to(self.device)
-                origin_mr, origin_ct, enhance_ct, mask = torch.split(samp_img_gpu, [5, 1, 1, 1], dim=1)
+                images = images.to(self.device)
+                origin_mr, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
 
-                out_global = self.stage1(origin_mr * mask)
+                stage1_out = self.stage1(origin_mr * mask)
 
                 if epoch <= self.epoch_stage1:
-                    metrics = self.process_output(out_global, None, origin_mr, mask, origin_ct, enhance_ct,
-                                                  samp_lct,
+                    metrics = self.process_output(stage1_out, None, origin_mr, mask, origin_ct, enhance_ct,
+                                                  image_locations,
                                                   epoch, iteration, slice_index, stage=1, metrics=metrics)
                 elif epoch <= self.epoch_stage2:
-                    out_second = self.stage2(out_global * mask)
-                    metrics = self.process_output(out_global, out_second, origin_mr, mask, origin_ct,
-                                                  enhance_ct, samp_lct,
+                    stage2_out = self.stage2(stage1_out * mask)
+                    metrics = self.process_output(stage1_out, stage2_out, origin_mr, mask, origin_ct,
+                                                  enhance_ct, image_locations,
                                                   epoch, iteration, slice_index, stage=2, metrics=metrics)
                 else:
-                    out_second = self.stage2(out_global * mask)
-                    out_third = self.resbranch(origin_mr * mask)
-                    out = out_second + out_third
-                    metrics = self.process_output(out, out_second, origin_mr, mask, origin_ct, enhance_ct,
-                                                  samp_lct, epoch,
+                    stage2_out = self.stage2(stage1_out * mask)
+                    stage3_out = self.resbranch(origin_mr * mask)
+                    out = stage2_out + stage3_out
+                    metrics = self.process_output(out, stage2_out, origin_mr, mask, origin_ct, enhance_ct,
+                                                  image_locations, epoch,
                                                   iteration, slice_index, stage=3, metrics=metrics)
 
             # 打印和记录最终测试结果

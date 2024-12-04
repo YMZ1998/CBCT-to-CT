@@ -31,7 +31,6 @@ if __name__ == '__main__':
         'epoch_stage2': 40,
         'epoch_total': 60,
         'batch_size': 2,
-        'device_num': '0',
         'learning_rate': 0.0001,
         'model_path': 'checkpoint',
         'last_checkpoint_name': 'checkpoint/last.pth',

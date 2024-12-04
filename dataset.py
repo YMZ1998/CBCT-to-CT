@@ -1,11 +1,10 @@
-import torch.utils.data
-import numpy as np
-import matplotlib.pyplot as plt
-import random
-import SimpleITK as sitk
 import os
+import random
+
+import SimpleITK as sitk
+import numpy as np
+import torch.utils.data
 from tqdm import tqdm
-from skimage.transform import resize
 
 dataser_path = './dataset'
 MASK_POINT = []
@@ -78,28 +77,43 @@ def normalize(img, type='cbct'):
         # img = np.clip(img, 0, 1)
         return img
 
-
 def mypadding(img, x=288, y=288, v=0):
-    # print(img.shape)
-    temp_x = x - img.shape[2]
-    padding_x_fore = temp_x // 2
-    padding_x_behind = temp_x - padding_x_fore
+    # 获取图片的高度和宽度
+    h, w = img.shape[1], img.shape[2]
 
-    temp_y = y - img.shape[1]
-    padding_y_fore = temp_y // 2
-    padding_y_behind = temp_y - padding_y_fore
+    # 计算前后填充
+    padding_y = (y - h) // 2, (y - h) - (y - h) // 2
+    padding_x = (x - w) // 2, (x - w) - (x - w) // 2
 
-    # print(padding_x_fore, padding_x_behind, padding_y_fore, padding_y_behind)
-    # print(img.shape)
-    padded_img = np.pad(img, ((0, 0), (padding_y_fore, padding_y_behind), (padding_x_fore, padding_x_behind)),
-                        mode='constant',
-                        constant_values=v)
+    # 使用 np.pad 进行填充
+    padded_img = np.pad(img, ((0, 0), padding_y, padding_x), mode='constant', constant_values=v)
 
-    # x, y, w, h
-    img_location = np.array([padding_x_fore, padding_y_fore, img.shape[2], img.shape[1]])
-    img_location = np.expand_dims(img_location, 0)
-    # print(img_location)
+    # 返回填充后的图片和原始图片的位置
+    img_location = np.array([padding_x[0], padding_y[0], w, h])
     return padded_img, img_location
+
+
+# def mypadding(img, x=288, y=288, v=0):
+#     # print(img.shape)
+#     temp_x = x - img.shape[2]
+#     padding_x_fore = temp_x // 2
+#     padding_x_behind = temp_x - padding_x_fore
+#
+#     temp_y = y - img.shape[1]
+#     padding_y_fore = temp_y // 2
+#     padding_y_behind = temp_y - padding_y_fore
+#
+#     # print(padding_x_fore, padding_x_behind, padding_y_fore, padding_y_behind)
+#     # print(img.shape)
+#     padded_img = np.pad(img, ((0, 0), (padding_y_fore, padding_y_behind), (padding_x_fore, padding_x_behind)),
+#                         mode='constant',
+#                         constant_values=v)
+#
+#     # x, y, w, h
+#     img_location = np.array([padding_x_fore, padding_y_fore, img.shape[2], img.shape[1]])
+#     img_location = np.expand_dims(img_location, 0)
+#     # print(img_location)
+#     return padded_img, img_location
 
 
 def cal_min_max(path):
