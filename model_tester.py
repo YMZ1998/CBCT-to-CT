@@ -19,15 +19,16 @@ class ModelTester:
         self.epoch_stage2 = epoch_stage2
         self.logger = logger
 
-    def save_visualization(self, epoch, iteration, slice_index, metrics, show_mr, show_origin_ct, show_stage1_out, mask,
-                           show_ct2=None, show_out2=None):
+    def save_visualization(self, epoch, iteration, slice_index, metrics, show_cbct, show_origin_ct, show_stage1_out,
+                           mask,
+                           show_enhanced_ct, show_stage2_out=None):
         """保存视觉化结果"""
         fig = plt.figure(figsize=(15, 3), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
 
         plt.subplot(1, 5, 1)
         plt.axis("off")
-        plt.imshow(show_mr[2], cmap="gray")
+        plt.imshow(show_cbct[2], cmap="gray")
 
         plt.subplot(1, 5, 2)
         plt.axis("off")
@@ -35,24 +36,23 @@ class ModelTester:
 
         plt.subplot(1, 5, 3)
         plt.axis("off")
+        plt.imshow(show_enhanced_ct, cmap="gray")
+
+        plt.subplot(1, 5, 4)
+        plt.axis("off")
         plt.imshow(show_stage1_out * mask, cmap="gray")
 
-        if show_ct2 is not None:
-            plt.subplot(1, 5, 4)
-            plt.axis("off")
-            plt.imshow(show_ct2, cmap="gray")
-
-        if show_out2 is not None:
+        if show_stage2_out is not None:
             plt.subplot(1, 5, 5)
             plt.axis("off")
-            plt.imshow(show_out2 * mask, cmap="gray")
+            plt.imshow(show_stage2_out * mask, cmap="gray")
 
         plt.subplots_adjust(top=0.85)
         plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
         plt.clf()
         plt.close(fig)
 
-    def process_output(self, stage1_out, stage2_out, origin_mr, origin_mask, origin_ct, enhance_ct, origin_location,
+    def process_output(self, stage1_out, stage2_out, origin_cbct, origin_mask, origin_ct, enhance_ct, origin_location,
                        epoch,
                        iteration,
                        slice_index, stage, metrics):
@@ -67,7 +67,7 @@ class ModelTester:
 
         if iteration == slice_index:
             # 处理和转换图像数据
-            show_mr = origin_mr.detach().cpu().squeeze().numpy()
+            show_cbct = origin_cbct.detach().cpu().squeeze().numpy()
             show_origin_ct = origin_ct.detach().cpu().squeeze().numpy()
             mask = origin_mask.detach().cpu().squeeze().numpy()
             show_stage1_out = stage1_out.detach().cpu().squeeze().numpy()
@@ -75,7 +75,7 @@ class ModelTester:
             show_stage2_out = stage2_out.detach().cpu().squeeze().numpy() if stage2_out is not None else None
 
             # 保存图像
-            self.save_visualization(epoch, iteration, slice_index, global_metrics, show_mr, show_origin_ct,
+            self.save_visualization(epoch, iteration, slice_index, global_metrics, show_cbct, show_origin_ct,
                                     show_stage1_out,
                                     mask, show_enhanced_ct, show_stage2_out)
 
@@ -99,24 +99,24 @@ class ModelTester:
             for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test)):
 
                 images = images.to(self.device)
-                origin_mr, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
+                origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
 
-                stage1_out = self.stage1(origin_mr * mask)
+                stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:
-                    metrics = self.process_output(stage1_out, None, origin_mr, mask, origin_ct, enhance_ct,
+                    metrics = self.process_output(stage1_out, None, origin_cbct, mask, origin_ct, enhance_ct,
                                                   image_locations,
                                                   epoch, iteration, slice_index, stage=1, metrics=metrics)
                 elif epoch <= self.epoch_stage2:
                     stage2_out = self.stage2(stage1_out * mask)
-                    metrics = self.process_output(stage1_out, stage2_out, origin_mr, mask, origin_ct,
+                    metrics = self.process_output(stage1_out, stage2_out, origin_cbct, mask, origin_ct,
                                                   enhance_ct, image_locations,
                                                   epoch, iteration, slice_index, stage=2, metrics=metrics)
                 else:
                     stage2_out = self.stage2(stage1_out * mask)
-                    stage3_out = self.resbranch(origin_mr * mask)
+                    stage3_out = self.resbranch(origin_cbct * mask)
                     out = stage2_out + stage3_out
-                    metrics = self.process_output(out, stage2_out, origin_mr, mask, origin_ct, enhance_ct,
+                    metrics = self.process_output(out, stage2_out, origin_cbct, mask, origin_ct, enhance_ct,
                                                   image_locations, epoch,
                                                   iteration, slice_index, stage=3, metrics=metrics)
 
