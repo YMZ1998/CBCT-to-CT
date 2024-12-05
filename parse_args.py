@@ -37,7 +37,7 @@ def get_model(device):
 def parse_args():
     from utils import set_seed
     set_seed(3407)
-    epoch_step = 50
+    epoch_step = 2
 
     parser = argparse.ArgumentParser(description="Train or test the CBCT to CT model")
     # 添加命令行参数

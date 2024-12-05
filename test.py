@@ -25,7 +25,8 @@ def test():
                                                    pin_memory=True, drop_last=True)
 
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,
-                               epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger)
+                               epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger,
+                               save_all=True)
 
     model_tester.test(data_loader_test, args.epoch_total)
 

@@ -6,11 +6,11 @@ from image_metrics import *
 from post_process import process
 
 synthrad_metrics_stage1 = ImageMetrics(dynamic_range=[-150., 850.])
-synthrad_metrics_stage2 = ImageMetrics(dynamic_range=[-1024., 3000.])
+synthrad_metrics_stage2_stage3 = ImageMetrics(dynamic_range=[-1024., 3000.])
 
 
 class ModelTester:
-    def __init__(self, stage1, stage2, resbranch, device, epoch_stage1, epoch_stage2, logger):
+    def __init__(self, stage1, stage2, resbranch, device, epoch_stage1, epoch_stage2, logger, save_all=False):
         self.stage1 = stage1
         self.stage2 = stage2
         self.resbranch = resbranch
@@ -18,45 +18,50 @@ class ModelTester:
         self.epoch_stage1 = epoch_stage1
         self.epoch_stage2 = epoch_stage2
         self.logger = logger
+        self.save_all = save_all
 
-    def save_visualization(self, epoch, iteration, slice_index, metrics, show_cbct, show_origin_ct, show_stage1_out,
-                           mask, show_enhanced_ct, show_stage2_out=None):
+    def save_visualization(self, epoch, iteration, metrics, show_cbct, show_origin_ct, show_stage1_out,
+                           mask, show_enhanced_ct, show_stage2_out=None, show_stage3_out=None):
         # 创建一个图形
-        fig = plt.figure(figsize=(15, 3), dpi=100, tight_layout=True)
+        fig = plt.figure(figsize=(18, 3), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
 
         # 显示 CBCT 图像
-        plt.subplot(1, 5, 1)
+        plt.subplot(1, 6, 1)
         plt.axis("off")
         plt.imshow(show_cbct[2], cmap="gray")
-        plt.title("CBCT Slice")
+        plt.title("CBCT")
 
         # 显示原始 CT 图像
-        plt.subplot(1, 5, 2)
+        plt.subplot(1, 6, 2)
         plt.axis("off")
         plt.imshow(show_origin_ct, cmap="gray")
         plt.title("Original CT")
 
         # 显示增强后的 CT 图像
-        plt.subplot(1, 5, 3)
+        plt.subplot(1, 6, 3)
         plt.axis("off")
         plt.imshow(show_enhanced_ct, cmap="gray")
         plt.title("Enhanced CT")
 
         # 显示阶段1的输出图像
-        plt.subplot(1, 5, 4)
+        plt.subplot(1, 6, 4)
         plt.axis("off")
         plt.imshow(show_stage1_out * mask, cmap="gray")
         plt.title("Stage 1 Output")
 
         # 如果有阶段2的输出，显示阶段2的图像
         if show_stage2_out is not None:
-            plt.subplot(1, 5, 5)
+            plt.subplot(1, 6, 5)
             plt.axis("off")
             plt.imshow(show_stage2_out * mask, cmap="gray")
             plt.title("Stage 2 Output")
 
-        # 调整图形布局，防止标题被遮挡
+        if show_stage3_out is not None:
+            plt.subplot(1, 6, 6)
+            plt.axis("off")
+            plt.imshow(show_stage3_out * mask, cmap="gray")
+            plt.title("Stage 3 Output")
         plt.subplots_adjust(top=0.85)
 
         # 保存图像
@@ -66,18 +71,21 @@ class ModelTester:
         plt.clf()
         plt.close(fig)
 
-    def process_output(self, stage1_out, stage2_out, origin_cbct, origin_mask, origin_ct, enhance_ct, origin_location,
-                       epoch, iteration, slice_index, stage, metrics, save_all=False):
+    def process_output(self, stage1_out, stage2_out, stage3_out, origin_cbct, origin_mask, origin_ct, enhance_ct,
+                       origin_location, epoch, iteration, slice_index, stage, metrics):
         """处理每一阶段的输出、计算指标并保存可视化结果"""
         if stage == 1:
             out_cal, ct_cal, mask_cal = process(stage1_out, enhance_ct, origin_location, origin_mask, min_v=-150,
                                                 max_v=850)
             global_metrics = synthrad_metrics_stage1.score_patient(ct_cal, out_cal, mask_cal)
-        else:
+        elif stage == 2:
             out_cal, ct_cal, mask_cal = process(stage2_out, origin_ct, origin_location, origin_mask)
-            global_metrics = synthrad_metrics_stage2.score_patient(ct_cal, out_cal, mask_cal)
+            global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
+        else:
+            out_cal, ct_cal, mask_cal = process(stage3_out, origin_ct, origin_location, origin_mask)
+            global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
 
-        if iteration == slice_index or (save_all and iteration % 10 == 0):
+        if iteration == slice_index or (self.save_all and iteration % 10 == 0):
             # 处理和转换图像数据
             show_cbct = origin_cbct.detach().cpu().squeeze().numpy()
             show_origin_ct = origin_ct.detach().cpu().squeeze().numpy()
@@ -85,11 +93,11 @@ class ModelTester:
             show_stage1_out = stage1_out.detach().cpu().squeeze().numpy()
             show_enhanced_ct = enhance_ct.detach().cpu().squeeze().numpy()
             show_stage2_out = stage2_out.detach().cpu().squeeze().numpy() if stage2_out is not None else None
+            show_stage3_out = stage3_out.detach().cpu().squeeze().numpy() if stage3_out is not None else None
 
             # 保存图像
-            self.save_visualization(epoch, iteration, slice_index, global_metrics, show_cbct, show_origin_ct,
-                                    show_stage1_out,
-                                    mask, show_enhanced_ct, show_stage2_out)
+            self.save_visualization(epoch, iteration, global_metrics, show_cbct, show_origin_ct,
+                                    show_stage1_out, mask, show_enhanced_ct, show_stage2_out, show_stage3_out)
 
         metrics[0, 0, iteration] = global_metrics['psnr']
         metrics[0, 1, iteration] = global_metrics['ssim']
@@ -105,7 +113,6 @@ class ModelTester:
 
         ds_len = len(data_loader_test)
         metrics = np.zeros((1, 3, ds_len))
-        save_all = epoch == self.epoch_stage1 * 3
         slice_index = 120
 
         with torch.no_grad():
@@ -117,21 +124,21 @@ class ModelTester:
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:
-                    metrics = self.process_output(stage1_out, None, origin_cbct, mask, origin_ct, enhance_ct,
-                                                  image_locations,
-                                                  epoch, iteration, slice_index, stage=1, metrics=metrics)
+                    metrics = self.process_output(stage1_out, None, None, origin_cbct, mask, origin_ct, enhance_ct,
+                                                  image_locations, epoch, iteration, slice_index, stage=1,
+                                                  metrics=metrics)
                 elif epoch <= self.epoch_stage2:
                     stage2_out = self.stage2(stage1_out * mask)
-                    metrics = self.process_output(stage1_out, stage2_out, origin_cbct, mask, origin_ct,
-                                                  enhance_ct, image_locations,
-                                                  epoch, iteration, slice_index, stage=2, metrics=metrics)
+                    metrics = self.process_output(stage1_out, stage2_out, None, origin_cbct, mask, origin_ct,
+                                                  enhance_ct, image_locations, epoch, iteration, slice_index, stage=2,
+                                                  metrics=metrics)
                 else:
                     stage2_out = self.stage2(stage1_out * mask)
                     stage3_out = self.resbranch(origin_cbct * mask)
-                    final_out = stage2_out + stage3_out
-                    metrics = self.process_output(final_out, stage2_out, origin_cbct, mask, origin_ct, enhance_ct,
-                                                  image_locations, epoch,
-                                                  iteration, slice_index, stage=3, metrics=metrics, save_all=save_all)
+                    stage3_out = stage2_out + stage3_out
+                    metrics = self.process_output(stage1_out, stage2_out, stage3_out, origin_cbct, mask, origin_ct,
+                                                  enhance_ct, image_locations, epoch, iteration, slice_index, stage=3,
+                                                  metrics=metrics)
 
             # 打印和记录最终测试结果
             avg_psnr = np.nanmean(metrics[0][0])
