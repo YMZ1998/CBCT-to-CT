@@ -4,8 +4,6 @@ import shutil
 
 import torch
 
-from network import MyUNet_plus, MyUNet
-
 
 def get_device():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,20 +25,38 @@ def check_dir(args):
     os.makedirs(args.visual_path, exist_ok=True)
 
 
-def get_model(device):
-    stage1 = MyUNet_plus(32).to(device)
-    stage2 = MyUNet(32).to(device)
-    resbranch = MyUNet_plus(32, act=False).to(device)
-    return stage1, stage2, resbranch
+def get_model(args):
+    print('★' * 30)
+    print(f'model:{args.arch}')
+    print('★' * 30)
+    device = get_device()
+    if args.arch == 'unet':
+        from network.unet import MyUNet_plus, MyUNet
+
+        stage1 = MyUNet_plus(32).to(device)
+        stage2 = MyUNet(32).to(device)
+        resbranch = MyUNet_plus(32, act=False).to(device)
+        return stage1, stage2, resbranch
+
+    elif args.arch == 'efficientnet_b0':
+        from network.efficientnet_unet import EfficientUNet
+        stage1 = EfficientUNet(5, model_name=args.arch).to(device)
+        stage2 = EfficientUNet(1, model_name=args.arch).to(device)
+        resbranch = EfficientUNet(5, model_name=args.arch).to(device)
+        return stage1, stage2, resbranch
+
+    else:
+        raise ValueError('arch error')
 
 
 def parse_args():
     from utils import set_seed
     set_seed(3407)
-    epoch_step = 2
+    epoch_step = 50
 
     parser = argparse.ArgumentParser(description="Train or test the CBCT to CT model")
     # 添加命令行参数
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet//efficientnet_b0')
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
     parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")
     parser.add_argument('--wandb', default=False, type=bool, help="Enable wandb logging")
@@ -68,3 +84,31 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     print(args)
+    from torchsummary import summary
+
+    image_size = 320
+
+    stage1, stage2, resbranch = get_model(args)
+    # summary(stage1, (5, image_size, image_size))
+    # summary(stage2, (1, image_size, image_size))
+    # summary(resbranch, (5, image_size, image_size))
+
+    device = get_device()
+
+
+    class Model(torch.nn.Module):
+        def __init__(self, stage1, stage2, resbranch):
+            super(Model, self).__init__()
+            self.stage1 = stage1
+            self.stage2 = stage2
+            self.resbranch = resbranch
+
+        def forward(self, x):
+            x1 = self.stage1(x)
+            x2 = self.stage2(x1)
+            x3 = self.resbranch(x)
+            return x2 + x3
+
+
+    model = Model(stage1, stage2, resbranch).to(device)
+    summary(model, (5, image_size, image_size))

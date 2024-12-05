@@ -260,7 +260,7 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
 
 
 def generate_ds():
-    brain_shape = [304, 304]
+    brain_shape = [320, 320]
     generate_train_test_dataset('./data/train/brain', padding=brain_shape, p='brain', t='train',
                                 interval=2, save_path='./dataset')
     generate_train_test_dataset('./data/test/brain', padding=brain_shape, p='brain', t='test',

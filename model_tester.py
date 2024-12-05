@@ -50,24 +50,22 @@ class ModelTester:
         plt.imshow(show_stage1_out * mask, cmap="gray")
         plt.title("Stage 1 Output")
 
-        # 如果有阶段2的输出，显示阶段2的图像
+        # 显示阶段2的输出图像
         if show_stage2_out is not None:
             plt.subplot(1, 6, 5)
             plt.axis("off")
             plt.imshow(show_stage2_out * mask, cmap="gray")
             plt.title("Stage 2 Output")
 
+        # 显示阶段3的输出图像
         if show_stage3_out is not None:
             plt.subplot(1, 6, 6)
             plt.axis("off")
             plt.imshow(show_stage3_out * mask, cmap="gray")
             plt.title("Stage 3 Output")
+
         plt.subplots_adjust(top=0.85)
-
-        # 保存图像
         plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
-
-        # 清空图形缓存并关闭图形
         plt.clf()
         plt.close(fig)
 
