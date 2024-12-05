@@ -20,35 +20,49 @@ class ModelTester:
         self.logger = logger
 
     def save_visualization(self, epoch, iteration, slice_index, metrics, show_cbct, show_origin_ct, show_stage1_out,
-                           mask,
-                           show_enhanced_ct, show_stage2_out=None):
-        """保存视觉化结果"""
+                           mask, show_enhanced_ct, show_stage2_out=None):
+        # 创建一个图形
         fig = plt.figure(figsize=(15, 3), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
 
+        # 显示 CBCT 图像
         plt.subplot(1, 5, 1)
         plt.axis("off")
         plt.imshow(show_cbct[2], cmap="gray")
+        plt.title("CBCT Slice")
 
+        # 显示原始 CT 图像
         plt.subplot(1, 5, 2)
         plt.axis("off")
         plt.imshow(show_origin_ct, cmap="gray")
+        plt.title("Original CT")
 
+        # 显示增强后的 CT 图像
         plt.subplot(1, 5, 3)
         plt.axis("off")
         plt.imshow(show_enhanced_ct, cmap="gray")
+        plt.title("Enhanced CT")
 
+        # 显示阶段1的输出图像
         plt.subplot(1, 5, 4)
         plt.axis("off")
         plt.imshow(show_stage1_out * mask, cmap="gray")
+        plt.title("Stage 1 Output")
 
+        # 如果有阶段2的输出，显示阶段2的图像
         if show_stage2_out is not None:
             plt.subplot(1, 5, 5)
             plt.axis("off")
             plt.imshow(show_stage2_out * mask, cmap="gray")
+            plt.title("Stage 2 Output")
 
+        # 调整图形布局，防止标题被遮挡
         plt.subplots_adjust(top=0.85)
+
+        # 保存图像
         plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
+
+        # 清空图形缓存并关闭图形
         plt.clf()
         plt.close(fig)
 
