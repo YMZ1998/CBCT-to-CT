@@ -23,7 +23,7 @@ def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1
     last_epoch = checkpoint['epoch']
     last_loss = checkpoint['loss']
     print(f"Loaded checkpoint from epoch {last_epoch} with loss: {last_loss}")
-    return last_epoch, last_loss
+    return last_epoch
 
 
 def train():
@@ -37,10 +37,9 @@ def train():
     dataset_test_path = args.dataset_path[1] if args.anatomy == 'brain' else args.dataset_path[3]
 
 
-    # 如果需要加载wandb
     if args.wandb:
         assert wandb.run is None
-        run = wandb.init(project=args.project_name, config=vars(args))  # 将 `args` 传递到 wandb 中
+        run = wandb.init(project=args.project_name, config=vars(args))
         assert wandb.run is not None
         print('Config:', wandb.config)
 
@@ -52,10 +51,9 @@ def train():
 
     # 如果需要恢复训练
     last_epoch = 0
-    last_loss = 0
     if args.resume:
         if os.path.exists(args.checkpoint_path):
-            last_epoch, last_loss = load_checkpoint(args.checkpoint_path, stage1, stage2, resbranch,
+            last_epoch = load_checkpoint(args.checkpoint_path, stage1, stage2, resbranch,
                                                     optimizer_stage1,
                                                     optimizer_stage2, optimizer_resbranch)
         else:

@@ -63,18 +63,18 @@ class ModelTrainer:
             print(f"stage total {epoch}/{self.epoch_total} epoch")
             current_stage = 3
 
-        for iteration, (samp_img, _) in enumerate(tqdm(data_loader_train)):
+        for iteration, (images, _) in enumerate(tqdm(data_loader_train)):
             if iteration % interval != 0:
                 continue
 
-            samp_img_gpu = samp_img.to(self.device)
-            samp_mr_gpu, samp_ct_gpu, samp_ct2_gpu, mask_gpu = torch.split(samp_img_gpu, [5, 1, 1, 1], dim=1)
+            images = images.to(self.device)
+            origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
 
             # Training Stage 1
             if current_stage == 1:
                 self.optimizer_stage1.zero_grad()
-                out_global = self.stage1(samp_mr_gpu * mask_gpu)
-                loss_gb = self.compute_loss(out_global, samp_ct2_gpu, mask_gpu)
+                out_global = self.stage1(origin_cbct * mask)
+                loss_gb = self.compute_loss(out_global, enhance_ct, mask)
                 loss_gbs.append(loss_gb.item())
                 loss_gb.backward()
                 self.optimizer_stage1.step()
@@ -82,10 +82,10 @@ class ModelTrainer:
             # Training Stage 2
             elif current_stage == 2:
                 self.optimizer_stage2.zero_grad()
-                out_global = self.stage1(samp_mr_gpu * mask_gpu)
+                out_global = self.stage1(origin_cbct * mask)
                 out_global_cp = out_global.clone().detach()
-                out_second = self.stage2(out_global_cp * mask_gpu)
-                loss_gb2 = self.compute_loss(out_second, samp_ct_gpu, mask_gpu)
+                out_second = self.stage2(out_global_cp * mask)
+                loss_gb2 = self.compute_loss(out_second, origin_ct, mask)
                 loss_gbs.append(loss_gb2.item())
                 loss_gb2.backward()
                 self.optimizer_stage2.step()
@@ -96,13 +96,13 @@ class ModelTrainer:
                 self.optimizer_stage2.zero_grad()
                 self.optimizer_resbranch.zero_grad()
 
-                out_global = self.stage1(samp_mr_gpu * mask_gpu)
+                out_global = self.stage1(origin_cbct * mask)
                 out_global_cp = out_global.clone().detach()
-                out_second = self.stage2(out_global_cp * mask_gpu)
-                out_third = self.resbranch(samp_mr_gpu * mask_gpu)
+                out_second = self.stage2(out_global_cp * mask)
+                out_third = self.resbranch(origin_cbct * mask)
                 out = out_second + out_third
 
-                loss_gb3 = self.compute_loss(out, samp_ct_gpu, mask_gpu)
+                loss_gb3 = self.compute_loss(out, origin_ct, mask)
                 loss_gbs.append(loss_gb3.item())
                 loss_gb3.backward()
                 self.optimizer_resbranch.step()

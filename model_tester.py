@@ -129,7 +129,7 @@ class ModelTester:
                     stage2_out = self.stage2(stage1_out * mask)
                     stage3_out = self.resbranch(origin_cbct * mask)
                     final_out = stage2_out + stage3_out
-                    metrics = self.process_output(stage1_out, final_out, origin_cbct, mask, origin_ct, enhance_ct,
+                    metrics = self.process_output(final_out, stage2_out, origin_cbct, mask, origin_ct, enhance_ct,
                                                   image_locations, epoch,
                                                   iteration, slice_index, stage=3, metrics=metrics, save_all=save_all)
 

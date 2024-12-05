@@ -42,8 +42,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train or test the CBCT to CT model")
     # 添加命令行参数
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
-    parser.add_argument('--resume', action='store_true', help="Resume from the last checkpoint")
-    parser.add_argument('--wandb', action='store_true', help="Enable wandb logging")
+    parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")
+    parser.add_argument('--wandb', default=False, type=bool, help="Enable wandb logging")
     parser.add_argument('--project_name', type=str, default='synthRAD_CBCT_to_CT', help="Wandb project name")
     parser.add_argument('--epoch_stage1', type=int, default=epoch_step, help="Epoch count for stage 1")
     parser.add_argument('--epoch_stage2', type=int, default=epoch_step * 2, help="Epoch count for stage 2")
