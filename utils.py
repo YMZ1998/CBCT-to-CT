@@ -1,36 +1,34 @@
-import random
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import os
-import numpy as np
-import math
-import time
 import logging
-import yaml
+import math
+import os
 import random
-import torch
+import time
+
 import numpy as np
-import matplotlib.pyplot as plt
+import torch
 
 
 def set_seed(seed: int):
     """
-    platform agnostic seed
-    :return:
+    设置平台无关的随机种子，确保实验结果的可重复性。
+    :param seed: 随机种子
     """
-    # note that this still won't be entirely deterministic
-    # a better solution can be found at https://github.com/NVIDIA/framework-determinism
+    # 设置 Python 的哈希种子，确保字典等结构的可重复性
     os.environ['PYTHONHASHSEED'] = str(seed)
+
     random.seed(seed)
     np.random.seed(seed)
-
-def set_seed_torch(seed: int):
-    """ 100% deterministically """
-    set_seed(seed)
     torch.manual_seed(seed)
+
+    # 设置 PyTorch GPU 随机种子（如果使用CUDA）
     torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # 如果使用多个 GPU，这行代码也可以保证一致性
+
+    # 设置 CuDNN 使用确定性算法，这对于 GPU 上的操作是必要的
     torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False  # 禁用 CuDNN 自动调优，以确保每次运行结果相同
+    print(f'Seed set to {seed} for all libraries (Python, NumPy, PyTorch)')
+
 
 def get_logger(log_path='log_path'):
     if not os.path.exists(log_path):
@@ -39,11 +37,10 @@ def get_logger(log_path='log_path'):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('[%(levelname)s]   %(asctime)s    %(message)s')
-    txthandle = logging.FileHandler((log_path+'/'+timer+'_log.txt'))
+    txthandle = logging.FileHandler((log_path + '/' + timer + '_log.txt'))
     txthandle.setFormatter(formatter)
     logger.addHandler(txthandle)
     return logger
-
 
 
 class SSIMLoss(torch.nn.Module):
@@ -59,7 +56,7 @@ class SSIMLoss(torch.nn.Module):
         g = torch.Tensor([math.exp(-(x - size // 2) ** 2 / float(2 * sigma ** 2)) for x in range(size)])
         g = g / g.sum()
         window = g.reshape([-1, 1]).matmul(g.reshape([1, -1]))
-        #kernel = torch.reshape(window, [1, 1, size, size]).repeat(3, 1, 1, 1)
+        # kernel = torch.reshape(window, [1, 1, size, size]).repeat(3, 1, 1, 1)
         kernel = torch.reshape(window, [1, 1, size, size])
         return kernel
 
@@ -94,27 +91,26 @@ class MixedPix2PixLoss(torch.nn.Module):
         self.l1_loss = torch.nn.L1Loss()
 
     def forward(self, pred, target):
-
         ssim_loss = torch.mean(self.ssim_loss(pred, target))
         l1_loss = self.l1_loss(pred, target)
         weighted_mixed_loss = self.alpha * ssim_loss + (1.0 - self.alpha) * l1_loss
         return weighted_mixed_loss
+
 
 class MixedPix2PixLoss_mask(torch.nn.Module):
     def __init__(self, alpha=0.5):
         super(MixedPix2PixLoss_mask, self).__init__()
         self.alpha = alpha
         self.ssim_loss = SSIMLoss()
-        self.l1_loss = torch.nn.L1Loss(reduction = 'none')
+        self.l1_loss = torch.nn.L1Loss(reduction='none')
         print('loss: ssim-', alpha, 'l1-', 1 - alpha)
 
     def forward(self, pred, target, mask=None):
-
         if mask != None and torch.count_nonzero(mask).item() != 0:
-            ssim_loss = self.ssim_loss(pred*mask, target*mask)
+            ssim_loss = self.ssim_loss(pred * mask, target * mask)
             ssim_loss = torch.sum(ssim_loss) / torch.count_nonzero(mask)
 
-            l1_loss = self.l1_loss(pred*mask, target*mask)
+            l1_loss = self.l1_loss(pred * mask, target * mask)
             l1_loss = torch.sum(l1_loss) / torch.count_nonzero(mask)
         else:
             ssim_loss = torch.mean(self.ssim_loss(pred, target))
@@ -122,55 +118,3 @@ class MixedPix2PixLoss_mask(torch.nn.Module):
 
         weighted_mixed_loss = self.alpha * ssim_loss + (1.0 - self.alpha) * l1_loss
         return weighted_mixed_loss
-
-
-if __name__ == '__main__':
-    # hole_area_fake = gen_hole_area((64, 64),(272, 272))
-    # print(hole_area_fake)
-    # mask = gen_input_mask(
-    #     shape=(4, 1, 272, 272),
-    #     hole_size=((64, 64),(64, 64)),
-    #     hole_area=None,
-    #     max_holes=1)
-    #
-    # print(mask.shape)
-    #
-    # plt.figure(figsize=(9, 3), dpi=300, tight_layout=True)
-    # plt.subplot(1, 3, 1)
-    # plt.imshow(mask[0].detach().cpu().squeeze().numpy(), cmap="gray")
-    # plt.subplot(1, 3, 2)
-    # plt.imshow(mask[1].detach().cpu().squeeze().numpy(), cmap="gray")
-    # plt.subplot(1, 3, 3)
-    # plt.imshow(mask[2].detach().cpu().squeeze().numpy(), cmap="gray")
-    # plt.show()
-    # plt.clf()
-    # plt.close()
-    import cv2 as cv
-    # x1 = torch.FloatTensor(1, 1, 272, 272)
-    # x2 = torch.FloatTensor(1, 1, 272, 272)
-    source_path = '/mnt/test_noisy/GL.jpg'
-    to_range_norm = lambda x: 2.*x - 1.
-
-    img = cv.imread(source_path, 0)
-    blur1 = cv.GaussianBlur(img,(13, 13),0)
-
-    img = img/ 255.0
-    img = to_range_norm(img)
-    img = toTensor(img).to(torch.float32)
-
-    blur1 = blur1/ 255.0
-    blur1 = to_range_norm(blur1)
-    blur1 = toTensor(blur1).to(torch.float32)
-
-    plt.figure(figsize=(6, 3), dpi=300, tight_layout=True)
-    plt.subplot(1, 2, 1)
-    plt.imshow(img.detach().cpu().squeeze().numpy(), cmap="gray")
-    plt.subplot(1, 2, 2)
-    plt.imshow(blur1.detach().cpu().squeeze().numpy(), cmap="gray")
-    plt.show()
-
-    # edgloss = EDGLoss()
-    # loss = edgloss(x1, x1)
-    joint_loss = JointLoss()
-    loss = joint_loss(blur1, img)
-    print(loss)

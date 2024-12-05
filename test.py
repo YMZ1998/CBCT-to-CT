@@ -1,10 +1,7 @@
 from dataset import *
 from model_tester import ModelTester
-from network import *
 from parse_args import get_device, parse_args, check_dir, get_model
 from utils import *
-
-set_seed_torch(14)
 
 
 def test():
@@ -23,8 +20,8 @@ def test():
     resbranch.load_state_dict(checkpoint['model_resbranch'])
 
     print('Testing...')
-    dataset_test = CreateDataset_npz(dataset_path=dataset_test_path)
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, shuffle=False, num_workers=4,
+    dataset_test = CreateDataset(dataset_path=dataset_test_path)
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
                                                    pin_memory=True, drop_last=True)
 
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,

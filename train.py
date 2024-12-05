@@ -4,11 +4,8 @@ from torch import optim
 from dataset import *
 from model_tester import ModelTester
 from model_trainer import ModelTrainer
-from network import *
 from parse_args import get_device, parse_args, check_dir, get_model
 from utils import *
-
-set_seed_torch(14)
 
 
 def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2,
@@ -65,11 +62,11 @@ def train():
             print('No checkpoint found, starting from scratch.')
 
     print('Training...')
-    dataset_train = CreateDataset_npz(dataset_path=dataset_train_path)
+    dataset_train = CreateDataset(dataset_path=dataset_train_path)
     data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True,
                                                     num_workers=4, pin_memory=True, drop_last=True)
-    dataset_test = CreateDataset_npz(dataset_path=dataset_test_path)
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, shuffle=False, num_workers=4,
+    dataset_test = CreateDataset(dataset_path=dataset_test_path)
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
                                                    pin_memory=True, drop_last=True)
 
     # 损失函数

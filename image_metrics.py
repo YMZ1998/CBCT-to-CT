@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import SimpleITK
-# from evalutils.io import SimpleITKLoader
-import numpy as np
+
 from typing import Optional
+
+import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from skimage.util.arraycrop import crop
 
 
-class ImageMetrics():
+class ImageMetrics:
     def __init__(self, dynamic_range=[-1024., 3000.]):
         # Use fixed wide dynamic range
         self.dynamic_range = dynamic_range
