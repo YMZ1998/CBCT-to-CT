@@ -5,7 +5,7 @@ from dataset import *
 from model_tester import ModelTester
 from model_trainer import ModelTrainer
 from network import *
-from parse_args import get_device, parse_args, check_dir
+from parse_args import get_device, parse_args, check_dir, get_model
 from utils import *
 
 set_seed_torch(14)
@@ -31,12 +31,14 @@ def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1
 
 def train():
     args = parse_args()
+    check_dir(args)
+    device = get_device()
+    logger = get_logger(args.log_path)
 
     # 设置数据集路径
     dataset_train_path = args.dataset_path[0] if args.anatomy == 'brain' else args.dataset_path[2]
     dataset_test_path = args.dataset_path[1] if args.anatomy == 'brain' else args.dataset_path[3]
 
-    device = get_device()
 
     # 如果需要加载wandb
     if args.wandb:
@@ -45,24 +47,18 @@ def train():
         assert wandb.run is not None
         print('Config:', wandb.config)
 
-    # 初始化模型和优化器
-    stage1 = MyUNet_plus(32).to(device)
-    stage2 = MyUNet(32).to(device)
-    resbranch = MyUNet_plus(32, act=False).to(device)
+    stage1, stage2, resbranch = get_model(device)
 
     optimizer_stage1 = optim.AdamW(stage1.parameters(), lr=args.learning_rate, weight_decay=0.01)
     optimizer_stage2 = optim.AdamW(stage2.parameters(), lr=args.learning_rate, weight_decay=0.01)
     optimizer_resbranch = optim.AdamW(resbranch.parameters(), lr=args.learning_rate, weight_decay=0.01)
 
-    check_dir(args)
-    logger = get_logger(args.log_path)
-
     # 如果需要恢复训练
     last_epoch = 0
     last_loss = 0
     if args.resume:
-        if os.path.exists(args.last_checkpoint_name):
-            last_epoch, last_loss = load_checkpoint(args.last_checkpoint_name, stage1, stage2, resbranch,
+        if os.path.exists(args.checkpoint_path):
+            last_epoch, last_loss = load_checkpoint(args.checkpoint_path, stage1, stage2, resbranch,
                                                     optimizer_stage1,
                                                     optimizer_stage2, optimizer_resbranch)
         else:
@@ -73,7 +69,7 @@ def train():
     data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True,
                                                     num_workers=4, pin_memory=True, drop_last=True)
     dataset_test = CreateDataset_npz(dataset_path=dataset_test_path)
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, shuffle=False, num_workers=4,
                                                    pin_memory=True, drop_last=True)
 
     # 损失函数
