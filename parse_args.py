@@ -42,7 +42,7 @@ def get_model(args):
         from network.efficientnet_unet import EfficientUNet
         stage1 = EfficientUNet(5, model_name=args.arch).to(device)
         stage2 = EfficientUNet(1, model_name=args.arch).to(device)
-        resbranch = EfficientUNet(5, model_name=args.arch, act=False).to(device)
+        resbranch = EfficientUNet(5, model_name=args.arch, act=True).to(device)
         return stage1, stage2, resbranch
 
     else:

@@ -11,7 +11,7 @@ def test():
     logger = get_logger(args.log_path)
 
     dataset_test_path = args.dataset_path[1] if args.anatomy == 'brain' else args.dataset_path[3]
-    stage1, stage2, resbranch = get_model(device)
+    stage1, stage2, resbranch = get_model(args)
 
     print('Loading checkpoint...')
     checkpoint = torch.load(args.checkpoint_path)

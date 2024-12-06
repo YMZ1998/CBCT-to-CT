@@ -4,6 +4,7 @@ import random
 import SimpleITK as sitk
 import numpy as np
 import torch.utils.data
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 MASK_POINT = []
@@ -61,6 +62,8 @@ def normalize(img, type='cbct'):
         min_value = -1024
         max_value = 3000
         img = (img - min_value) / (max_value - min_value)
+        img = np.clip(img, 0, 1)
+        img = img * 2 - 1
         # img = np.clip(img, 0, 1)
     else:
         pass
@@ -211,16 +214,17 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
 
         cbct = sitk.ReadImage(cbct_path)
         cbct = sitk.GetArrayFromImage(cbct)
-        cbct_norm = normalize(cbct, type='cbct')
-        cbct_padded, img_location = mypadding(cbct_norm, padding[0], padding[1])
+        cbct_padded, img_location = mypadding(cbct, padding[0], padding[1])
+        cbct_padded = normalize(cbct_padded, type='cbct')
 
         ct = sitk.ReadImage(ct_path)
         ct = sitk.GetArrayFromImage(ct)
-        ct_norm = normalize(ct, type='ct')
-        ct_padded, _ = mypadding(ct_norm, padding[0], padding[1])
+        ct_padded, _ = mypadding(ct, padding[0], padding[1], -1000)
+        ct_padded = normalize(ct_padded, type='ct')
 
         enhance_ct_norm = window_transform(ct, 1000, 350)
         enhance_ct_padded, _ = mypadding(enhance_ct_norm, padding[0], padding[1])
+        enhance_ct_padded = enhance_ct_padded * 2 - 1
 
         mask = sitk.ReadImage(mask_path)
         mask = sitk.GetArrayFromImage(mask)
@@ -248,29 +252,16 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
 
     # 打印统计信息
     print(
-        f"Shapes - cbct: {cbct_np.shape}, CT: {ct_np.shape}, Enhanced CT: {enhance_ct_np.shape}, Mask: {mask_np.shape},location: {locations.shape}")
-    print(f"cbct min: {cbct_np.min()}, max: {cbct_np.max()}")
-    print(f"ct min: {ct_np.min()}, max: {ct_np.max()}")
-    print(f"enhance ct min: {enhance_ct_np.min()}, max: {enhance_ct_np.max()}")
-    print(f"mask min: {mask_np.min()}, max: {mask_np.max()}")
+        f"Shapes - CBCT: {cbct_np.shape}, CT: {ct_np.shape}, Enhanced CT: {enhance_ct_np.shape}, Mask: {mask_np.shape}, Location: {locations.shape}")
+    print(f"CBCT min: {cbct_np.min()}, max: {cbct_np.max()}")
+    print(f"CT min: {ct_np.min()}, max: {ct_np.max()}")
+    print(f"Enhanced CT min: {enhance_ct_np.min()}, max: {enhance_ct_np.max()}")
+    print(f"Mask min: {mask_np.min()}, max: {mask_np.max()}")
 
     # 保存数据集
     dataset_name = os.path.join(save_path, f'synthRAD_interval_{interval}_{p}_{t}.npz')
     print(f"Saving dataset to: {dataset_name}")
     np.savez(dataset_name, images=np.concatenate((cbct_np, ct_np, enhance_ct_np, mask_np), axis=1), locations=locations)
-
-
-def generate_ds():
-    brain_shape = [320, 320]
-    generate_train_test_dataset('./data/train/brain', padding=brain_shape, p='brain', t='train',
-                                interval=2, save_path='./dataset')
-    generate_train_test_dataset('./data/test/brain', padding=brain_shape, p='brain', t='test',
-                                interval=1, save_path='./dataset')
-
-    # generate_train_test_dataset('./data/train/pelvis', padding=[592, 416], p='pelvis', t='train', interval=2,
-    #                             save_path='./dataset')
-    # generate_train_test_dataset('./data/test/pelvis', padding=[592, 416], p='pelvis', t='test', interval=1,
-    #                             save_path='./dataset')
 
 
 def load_npz_data(dataset_path):
@@ -294,6 +285,47 @@ def CreateDataset(dataset_path):
     return dataset
 
 
+def check_dataset():
+    images, image_locations = load_npz_data('./dataset/synthRAD_interval_1_brain_test.npz')
+    print("images shape:", images.shape)
+    # origin_cbct, origin_ct, enhance_ct, mask = np.split(images, [5, 1, 1, 1], dim=1)
+    origin_cbct, origin_ct, enhance_ct, mask = np.split(images[100], [5, 6, 7], axis=0)
+
+    fig = plt.figure(figsize=(9, 3), dpi=100, tight_layout=True)
+    # 显示 CBCT 图像
+    plt.subplot(1, 3, 1)
+    plt.axis("off")
+    plt.imshow(origin_cbct[2], cmap="gray")
+    plt.title("CBCT")
+
+    # 显示原始 CT 图像
+    plt.subplot(1, 3, 2)
+    plt.axis("off")
+    plt.imshow(origin_ct[0], cmap="gray")
+    plt.title("Original CT")
+
+    # 显示增强后的 CT 图像
+    plt.subplot(1, 3, 3)
+    plt.axis("off")
+    plt.imshow(enhance_ct[0], cmap="gray")
+    plt.title("Enhanced CT")
+
+    plt.show()
+
+
+def generate_dataset():
+    brain_shape = [320, 320]
+    generate_train_test_dataset('./data/train/brain', padding=brain_shape, p='brain', t='train', interval=2,
+                                save_path='./dataset')
+    generate_train_test_dataset('./data/test/brain', padding=brain_shape, p='brain', t='test', interval=1,
+                                save_path='./dataset')
+
+    # generate_train_test_dataset('./data/train/pelvis', padding=[592, 416], p='pelvis', t='train', interval=2,
+    #                             save_path='./dataset')
+    # generate_train_test_dataset('./data/test/pelvis', padding=[592, 416], p='pelvis', t='test', interval=1,
+    #                             save_path='./dataset')
+
+
 if __name__ == '__main__':
-    generate_ds()
-    # generate_valid_ds()
+    generate_dataset()
+    check_dataset()

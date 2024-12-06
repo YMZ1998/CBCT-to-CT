@@ -87,6 +87,8 @@ class ModelTrainer:
             if current_stage == 1:
                 self.optimizer_stage1.zero_grad()
                 out_global = self.stage1(origin_cbct * mask)
+                # print("out_global", torch.min(out_global).item(), torch.max(out_global).item())
+                # print("enhance_ct", torch.min(enhance_ct).item(), torch.max(enhance_ct).item())
                 loss_gb = self.compute_loss(out_global, enhance_ct, mask)
                 loss_gbs.append(loss_gb.item())
                 loss_gb.backward()
@@ -99,6 +101,8 @@ class ModelTrainer:
                 out_global = self.stage1(origin_cbct * mask)
                 out_global_cp = out_global.clone().detach()
                 out_second = self.stage2(out_global_cp * mask)
+                # print("out_second", torch.min(out_second).item(), torch.max(out_second).item())
+                # print("origin_ct", torch.min(origin_ct).item(), torch.max(origin_ct).item())
                 loss_gb2 = self.compute_loss(out_second, origin_ct, mask)
                 loss_gbs.append(loss_gb2.item())
                 loss_gb2.backward()
@@ -114,7 +118,7 @@ class ModelTrainer:
                 out_global_cp = out_global.clone().detach()
                 out_second = self.stage2(out_global_cp * mask)
                 out_third = self.resbranch(origin_cbct * mask)
-                out = out_second + out_third
+                out = (out_second + out_third) / 2
 
                 loss_gb3 = self.compute_loss(out, origin_ct, mask)
                 loss_gbs.append(loss_gb3.item())
@@ -138,3 +142,9 @@ class ModelTrainer:
         self.logger.info(log_str)
 
         return loss_gbs_v
+
+
+if __name__ == '__main__':
+    from train import train
+
+    train()

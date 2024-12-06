@@ -26,6 +26,12 @@ class ModelTester:
 
     def save_visualization(self, epoch, iteration, metrics, show_cbct, show_origin_ct, show_stage1_out,
                            mask, show_enhanced_ct, show_stage2_out=None, show_stage3_out=None):
+        # print("show_cbct", np.min(show_cbct), np.max(show_cbct))
+        # print("show_origin_ct", np.min(show_origin_ct), np.max(show_origin_ct))
+        # print("show_stage1_out", np.min(show_stage1_out), np.max(show_stage1_out))
+        # print("show_stage2_out", np.min(show_stage2_out), np.max(show_stage2_out))
+        # print("show_stage3_out", np.min(show_stage3_out), np.max(show_stage3_out))
+        # print("mask", np.min(mask), np.max(mask))
         # 创建一个图形
         fig = plt.figure(figsize=(18, 3), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
@@ -51,23 +57,23 @@ class ModelTester:
         # 显示阶段1的输出图像
         plt.subplot(1, 6, 4)
         plt.axis("off")
-        plt.imshow(show_stage1_out * mask, cmap="gray")
+        plt.imshow(np.where(mask == 0, -1, show_stage1_out), cmap="gray")
         plt.title("Stage 1 Output")
 
         # 显示阶段2的输出图像
         if show_stage2_out is not None:
             plt.subplot(1, 6, 5)
             plt.axis("off")
-            plt.imshow(show_stage2_out * mask, cmap="gray")
+            plt.imshow(np.where(mask == 0, -1, show_stage2_out), cmap="gray")
             plt.title("Stage 2 Output")
 
         # 显示阶段3的输出图像
         if show_stage3_out is not None:
             plt.subplot(1, 6, 6)
             plt.axis("off")
-            plt.imshow(show_stage3_out * mask, cmap="gray")
+            plt.imshow(np.where(mask == 0, -1, show_stage3_out), cmap="gray")
             plt.title("Stage 3 Output")
-
+        # plt.show()
         plt.subplots_adjust(top=0.85)
         plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
         plt.clf()
@@ -137,7 +143,7 @@ class ModelTester:
                 else:
                     stage2_out = self.stage2(stage1_out * mask)
                     stage3_out = self.resbranch(origin_cbct * mask)
-                    stage3_out = stage2_out + stage3_out
+                    stage3_out = (stage2_out + stage3_out) / 2
                     metrics = self.process_output(stage1_out, stage2_out, stage3_out, origin_cbct, mask, origin_ct,
                                                   enhance_ct, image_locations, epoch, iteration, slice_index, stage=3,
                                                   metrics=metrics)
@@ -152,3 +158,9 @@ class ModelTester:
             self.logger.info(log_str)
 
         return {'psnr': avg_psnr, 'ssim': avg_ssim, 'mae': avg_mae}
+
+
+if __name__ == '__main__':
+    from test import test
+
+    test()
