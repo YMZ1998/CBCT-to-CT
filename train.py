@@ -1,3 +1,5 @@
+import datetime
+
 import wandb
 from torch import optim
 
@@ -51,7 +53,7 @@ def train():
     optimizer_stage2 = optim.AdamW(stage2.parameters(), lr=args.learning_rate, weight_decay=0.01)
     optimizer_resbranch = optim.AdamW(resbranch.parameters(), lr=args.learning_rate, weight_decay=0.01)
 
-    lf = lambda x: ((1 + math.cos(x * math.pi / args.epoch_stage1)) / 2) * (
+    lf = lambda x: ((1 + math.cos(x * math.pi / args.epoch_total)) / 2) * (
         1 - args.learning_rate) + args.learning_rate  # cosine
     lr_scheduler_stage1 = torch.optim.lr_scheduler.LambdaLR(optimizer_stage1, lr_lambda=lf)
     lr_scheduler_stage2 = torch.optim.lr_scheduler.LambdaLR(optimizer_stage2, lr_lambda=lf)
@@ -98,6 +100,7 @@ def train():
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,
                                epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger)
 
+    start_time = time.time()
     for epoch in range(last_epoch + 1, args.epoch_total + 1):
         train_loss = model_trainer.train_one_epoch(data_loader_train, epoch, interval=2)
         test_metrics = model_tester.test(data_loader_test, epoch)
@@ -108,6 +111,10 @@ def train():
                 "ssim": test_metrics['ssim'],
                 "mae": test_metrics['mae']
             })
+
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    print("training time {}".format(total_time_str))
 
 
 if __name__ == '__main__':

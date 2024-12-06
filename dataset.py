@@ -214,8 +214,8 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
 
         cbct = sitk.ReadImage(cbct_path)
         cbct = sitk.GetArrayFromImage(cbct)
-        cbct_padded, img_location = mypadding(cbct, padding[0], padding[1])
-        cbct_padded = normalize(cbct_padded, type='cbct')
+        cbct = normalize(cbct, type='cbct')
+        cbct_padded, img_location = mypadding(cbct, padding[0], padding[1], -1)
 
         ct = sitk.ReadImage(ct_path)
         ct = sitk.GetArrayFromImage(ct)

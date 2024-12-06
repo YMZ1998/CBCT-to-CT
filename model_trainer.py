@@ -118,7 +118,8 @@ class ModelTrainer:
                 out_global_cp = out_global.clone().detach()
                 out_second = self.stage2(out_global_cp * mask)
                 out_third = self.resbranch(origin_cbct * mask)
-                out = (out_second + out_third) / 2
+                # out = (out_second + out_third) / 2
+                out = torch.tanh(out_second + out_third)
 
                 loss_gb3 = self.compute_loss(out, origin_ct, mask)
                 loss_gbs.append(loss_gb3.item())

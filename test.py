@@ -1,3 +1,5 @@
+import datetime
+
 from dataset import *
 from model_tester import ModelTester
 from parse_args import get_device, parse_args, check_dir, get_model
@@ -28,7 +30,11 @@ def test():
                                epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger,
                                save_all=True)
 
+    start_time = time.time()
     model_tester.test(data_loader_test, args.epoch_total)
+    total_time = time.time() - start_time
+    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
+    print("test time {}".format(total_time_str))
 
 
 if __name__ == '__main__':
