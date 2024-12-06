@@ -1,9 +1,12 @@
+import sys
+
 import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 
 from image_metrics import *
 from post_process import process
+
 plt.switch_backend('agg')
 
 synthrad_metrics_stage1 = ImageMetrics(dynamic_range=[-150., 850.])
@@ -115,7 +118,7 @@ class ModelTester:
         slice_index = 120
 
         with torch.no_grad():
-            for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test)):
+            for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):
 
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)

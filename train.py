@@ -9,7 +9,7 @@ from utils import *
 
 
 def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2,
-                    optimizer_resbranch):
+                    optimizer_resbranch, lr_scheduler_stage1, lr_scheduler_stage2, lr_scheduler_resbranch):
     checkpoint = torch.load(checkpoint_path)
 
     stage1.load_state_dict(checkpoint['model_stage1'])
@@ -19,6 +19,10 @@ def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1
     optimizer_stage1.load_state_dict(checkpoint['optimizer_stage1'])
     optimizer_stage2.load_state_dict(checkpoint['optimizer_stage2'])
     optimizer_resbranch.load_state_dict(checkpoint['optimizer_resbranch'])
+
+    lr_scheduler_stage1.load_state_dict(checkpoint['lr_scheduler_stage1'])
+    lr_scheduler_stage2.load_state_dict(checkpoint['lr_scheduler_stage2'])
+    lr_scheduler_resbranch.load_state_dict(checkpoint['lr_scheduler_resbranch'])
 
     last_epoch = checkpoint['epoch']
     last_loss = checkpoint['loss']
@@ -47,12 +51,18 @@ def train():
     optimizer_stage2 = optim.AdamW(stage2.parameters(), lr=args.learning_rate, weight_decay=0.01)
     optimizer_resbranch = optim.AdamW(resbranch.parameters(), lr=args.learning_rate, weight_decay=0.01)
 
+    lf = lambda x: ((1 + math.cos(x * math.pi / args.epoch_stage1)) / 2) * (
+        1 - args.learning_rate) + args.learning_rate  # cosine
+    lr_scheduler_stage1 = torch.optim.lr_scheduler.LambdaLR(optimizer_stage1, lr_lambda=lf)
+    lr_scheduler_stage2 = torch.optim.lr_scheduler.LambdaLR(optimizer_stage2, lr_lambda=lf)
+    lr_scheduler_resbranch = torch.optim.lr_scheduler.LambdaLR(optimizer_resbranch, lr_lambda=lf)
+
     last_epoch = 0
     if args.resume:
         if os.path.exists(args.checkpoint_path):
-            last_epoch = load_checkpoint(args.checkpoint_path, stage1, stage2, resbranch,
-                                                    optimizer_stage1,
-                                                    optimizer_stage2, optimizer_resbranch)
+            last_epoch = load_checkpoint(args.checkpoint_path, stage1, stage2, resbranch, optimizer_stage1,
+                                         optimizer_stage2, optimizer_resbranch, lr_scheduler_stage1,
+                                         lr_scheduler_stage2, lr_scheduler_resbranch)
         else:
             print('No checkpoint found, starting from scratch.')
 
@@ -74,6 +84,9 @@ def train():
         optimizer_stage1=optimizer_stage1,
         optimizer_stage2=optimizer_stage2,
         optimizer_resbranch=optimizer_resbranch,
+        lr_scheduler_stage1=lr_scheduler_stage1,
+        lr_scheduler_stage2=lr_scheduler_stage2,
+        lr_scheduler_resbranch=lr_scheduler_resbranch,
         criterion=criterion,
         device=device,
         logger=logger,

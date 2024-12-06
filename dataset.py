@@ -54,6 +54,7 @@ def normalize(img, type='cbct'):
         min_value = np.min(img)
         max_value = np.max(img)
         img = (img - min_value) / (max_value - min_value)
+        img = img * 2 - 1
         # img = np.clip(img, 0, 1)
     elif type == 'ct':
         # 后面试试直接 min max，不固定

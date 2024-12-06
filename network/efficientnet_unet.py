@@ -43,8 +43,6 @@ class IntermediateLayerGetter(nn.ModuleDict):
 
 
 activation_layer = nn.ReLU(inplace=True)
-
-
 # activation_layer = nn.LeakyReLU(0.1, inplace=True)
 
 class OutConv(nn.Sequential):
@@ -113,7 +111,7 @@ class DecoderBlock(nn.Module):
 
 
 class EfficientUNet(nn.Module):
-    def __init__(self, in_chans=3, num_classes=1, pretrain_backbone=True, model_name=None):
+    def __init__(self, in_chans=3, num_classes=1, pretrain_backbone=True, model_name=None, act=True):
         super(EfficientUNet, self).__init__()
         backbone = timm.create_model(model_name, pretrained=pretrain_backbone, in_chans=in_chans)
         self.stage_out_channels = [16, 24, 40, 112, 320]
@@ -132,6 +130,7 @@ class EfficientUNet(nn.Module):
         self.up4 = DecoderBlock(self.stage_out_channels[1] * 2, self.stage_out_channels[0], drop[3])
         self.outconv = OutConv(self.stage_out_channels[0] * 2, num_classes=num_classes)
 
+        self.act = act
         self.tanh = nn.Tanh()
 
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
@@ -152,7 +151,8 @@ class EfficientUNet(nn.Module):
         d1 = self.up4(d2, e0)
         out = self.outconv(d1)
 
-        out = self.tanh(out)
+        if self.act:
+            out = self.tanh(out)
         return out
 
 
@@ -164,3 +164,7 @@ if __name__ == '__main__':
 
     # model2 = timm.create_model('efficientnet_b0', pretrained=True, in_chans=3).to("cuda")
     # summary(model2, (3, 320, 320))
+    # import os
+    # cache_dir = torch.hub.get_dir()
+    # weights_dir = os.path.join(cache_dir, "checkpoints")
+    # print(f"预训练权重存储路径: {weights_dir}")

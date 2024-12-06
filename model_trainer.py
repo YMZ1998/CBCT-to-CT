@@ -1,10 +1,15 @@
-import torch
-import numpy as np
 import os
+import sys
+
+import numpy as np
+import torch
 from tqdm import tqdm
 
+
 class ModelTrainer:
-    def __init__(self, model_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2, optimizer_resbranch, criterion, device, logger, epoch_stage1, epoch_stage2, epoch_total):
+    def __init__(self, model_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2, optimizer_resbranch,
+                 lr_scheduler_stage1, lr_scheduler_stage2, lr_scheduler_resbranch, criterion, device, logger,
+                 epoch_stage1, epoch_stage2, epoch_total):
         self.model_path = model_path
         self.stage1 = stage1
         self.stage2 = stage2
@@ -12,6 +17,9 @@ class ModelTrainer:
         self.optimizer_stage1 = optimizer_stage1
         self.optimizer_stage2 = optimizer_stage2
         self.optimizer_resbranch = optimizer_resbranch
+        self.lr_scheduler_stage1 = lr_scheduler_stage1
+        self.lr_scheduler_stage2 = lr_scheduler_stage2
+        self.lr_scheduler_resbranch = lr_scheduler_resbranch
         self.criterion = criterion
         self.device = device
         self.logger = logger
@@ -43,10 +51,11 @@ class ModelTrainer:
             'optimizer_stage1': self.optimizer_stage1.state_dict(),
             'optimizer_stage2': self.optimizer_stage2.state_dict(),
             'optimizer_resbranch': self.optimizer_resbranch.state_dict(),
+            'lr_scheduler_stage1': self.lr_scheduler_stage1.state_dict(),
+            'lr_scheduler_stage2': self.lr_scheduler_stage2.state_dict(),
+            'lr_scheduler_resbranch': self.lr_scheduler_resbranch.state_dict(),
             'loss': loss
         }, os.path.join(self.model_path, 'last.pth'))
-
-        print(f'** save epoch {epoch}.')
 
     def train_one_epoch(self, data_loader_train, epoch, interval=1):
         loss_gbs = []
@@ -54,20 +63,22 @@ class ModelTrainer:
         self.stage2.train()
         self.resbranch.train()
 
-        # 打印当前训练阶段
+        print('-' * 20)
         if epoch <= self.epoch_stage1:
-            print(f"stage first {epoch}/{self.epoch_stage1} epoch")
+            print('stage 1 epoch {}/{} lr {:.6f}'.format(epoch, self.epoch_stage1,
+                                                         self.optimizer_stage1.param_groups[0]["lr"]))
             current_stage = 1
         elif epoch <= self.epoch_stage2:
-            print(f"stage second {epoch}/{self.epoch_stage2} epoch")
+            print('stage 2 epoch {}/{} lr {:.6f}'.format(epoch, self.epoch_stage2,
+                                                         self.optimizer_stage2.param_groups[0]["lr"]))
             current_stage = 2
         else:
-            print(f"stage total {epoch}/{self.epoch_total} epoch")
+            print('stage total epoch {}/{} lr {:.6f}'.format(epoch, self.epoch_total,
+                                                             self.optimizer_resbranch.param_groups[0]["lr"]))
             current_stage = 3
-
-        for iteration, (images, _) in enumerate(tqdm(data_loader_train)):
-            if iteration % interval != 0:
-                continue
+        print('-' * 20)
+        data_loader_train = tqdm(data_loader_train, file=sys.stdout)
+        for images, _ in data_loader_train:
 
             images = images.to(self.device)
             origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
@@ -80,6 +91,7 @@ class ModelTrainer:
                 loss_gbs.append(loss_gb.item())
                 loss_gb.backward()
                 self.optimizer_stage1.step()
+
 
             # Training Stage 2
             elif current_stage == 2:
@@ -108,9 +120,16 @@ class ModelTrainer:
                 loss_gbs.append(loss_gb3.item())
                 loss_gb3.backward()
                 self.optimizer_resbranch.step()
+            data_loader_train.desc = f"[train epoch {epoch}] loss: {np.sum(loss_gbs):.4f} "
+        if current_stage == 1:
+            self.lr_scheduler_stage1.step()
+        elif current_stage == 2:
+            self.lr_scheduler_stage2.step()
+        else:
+            self.lr_scheduler_resbranch.step()
 
         loss_gbs_v = np.sum(loss_gbs)
-        print(f'train epoch: {epoch}, loss: {loss_gbs_v}')
+        # print(f'train epoch: {epoch}, loss: {loss_gbs_v}')
 
         self.save_model(epoch, loss_gbs_v)
 

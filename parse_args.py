@@ -38,11 +38,11 @@ def get_model(args):
         resbranch = MyUNet_plus(32, act=False).to(device)
         return stage1, stage2, resbranch
 
-    elif args.arch == 'efficientnet_b0':
+    elif 'efficientnet' in args.arch:
         from network.efficientnet_unet import EfficientUNet
         stage1 = EfficientUNet(5, model_name=args.arch).to(device)
         stage2 = EfficientUNet(1, model_name=args.arch).to(device)
-        resbranch = EfficientUNet(5, model_name=args.arch).to(device)
+        resbranch = EfficientUNet(5, model_name=args.arch, act=False).to(device)
         return stage1, stage2, resbranch
 
     else:
@@ -56,16 +56,16 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description="Train or test the CBCT to CT model")
     # 添加命令行参数
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet//efficientnet_b0')
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b1', help='unet//efficientnet_b0')
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
-    parser.add_argument('--resume', default=True, type=bool, help="Resume from the last checkpoint")
+    parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")
     parser.add_argument('--wandb', default=False, type=bool, help="Enable wandb logging")
     parser.add_argument('--project_name', type=str, default='synthRAD_CBCT_to_CT', help="Wandb project name")
     parser.add_argument('--epoch_stage1', type=int, default=epoch_step, help="Epoch count for stage 1")
     parser.add_argument('--epoch_stage2', type=int, default=epoch_step * 2, help="Epoch count for stage 2")
     parser.add_argument('--epoch_total', type=int, default=epoch_step * 3, help="Total epoch count")
     parser.add_argument('--batch_size', type=int, default=2, help="Batch size")
-    parser.add_argument('--learning_rate', type=float, default=0.0001, help="Learning rate")
+    parser.add_argument('--learning_rate', type=float, default=5e-4, help="Learning rate")
     parser.add_argument('--model_path', type=str, default='checkpoint', help="Path to save model checkpoints")
     parser.add_argument('--checkpoint_path', type=str, default='checkpoint/last.pth',
                         help="Path to the last checkpoint")
