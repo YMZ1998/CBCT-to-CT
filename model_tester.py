@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 from image_metrics import *
 from post_process import process
+plt.switch_backend('agg')
 
 synthrad_metrics_stage1 = ImageMetrics(dynamic_range=[-150., 850.])
 synthrad_metrics_stage2_stage3 = ImageMetrics(dynamic_range=[-1024., 3000.])

@@ -58,7 +58,7 @@ def parse_args():
     # 添加命令行参数
     parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet//efficientnet_b0')
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
-    parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")
+    parser.add_argument('--resume', default=True, type=bool, help="Resume from the last checkpoint")
     parser.add_argument('--wandb', default=False, type=bool, help="Enable wandb logging")
     parser.add_argument('--project_name', type=str, default='synthRAD_CBCT_to_CT', help="Wandb project name")
     parser.add_argument('--epoch_stage1', type=int, default=epoch_step, help="Epoch count for stage 1")

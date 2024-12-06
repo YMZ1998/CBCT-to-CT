@@ -24,14 +24,16 @@ class ModelTrainer:
         return alpha * self.criterion(pred, target, mask) + (1 - alpha) * self.criterion(pred, target, 1 - mask)
 
     def save_model(self, epoch, loss):
-        """保存模型和优化器状态"""
-        torch.save({
-            'epoch': epoch,
-            'model_stage1': self.stage1.state_dict(),
-            'model_stage2': self.stage2.state_dict(),
-            'model_resbranch': self.resbranch.state_dict(),
-            'loss': loss
-        }, os.path.join(self.model_path, f'model_{epoch}.pth'))
+        # 每 10 个 epoch 保存一次模型
+        if epoch % 10 == 0:
+            """保存模型和优化器状态"""
+            torch.save({
+                'epoch': epoch,
+                'model_stage1': self.stage1.state_dict(),
+                'model_stage2': self.stage2.state_dict(),
+                'model_resbranch': self.resbranch.state_dict(),
+                'loss': loss
+            }, os.path.join(self.model_path, f'model_{epoch}.pth'))
 
         torch.save({
             'epoch': epoch,
@@ -109,10 +111,6 @@ class ModelTrainer:
 
         loss_gbs_v = np.sum(loss_gbs)
         print(f'train epoch: {epoch}, loss: {loss_gbs_v}')
-
-        # 每 10 个 epoch 保存一次模型
-        if epoch % 10 == 0:
-            self.save_model(epoch, loss_gbs_v)
 
         self.save_model(epoch, loss_gbs_v)
 
