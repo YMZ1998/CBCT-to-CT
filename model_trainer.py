@@ -1,16 +1,16 @@
-import os
 import sys
 
 import numpy as np
 import torch
 from tqdm import tqdm
 
+from parse_args import get_best_weight_path, get_latest_weight_path
+
 
 class ModelTrainer:
-    def __init__(self, model_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2, optimizer_resbranch,
-                 lr_scheduler_stage1, lr_scheduler_stage2, lr_scheduler_resbranch, criterion, device, logger,
-                 epoch_stage1, epoch_stage2, epoch_total):
-        self.model_path = model_path
+    def __init__(self, args, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2,
+                 optimizer_resbranch,
+                 lr_scheduler_stage1, lr_scheduler_stage2, lr_scheduler_resbranch, criterion, device, logger):
         self.stage1 = stage1
         self.stage2 = stage2
         self.resbranch = resbranch
@@ -23,16 +23,17 @@ class ModelTrainer:
         self.criterion = criterion
         self.device = device
         self.logger = logger
-        self.epoch_stage1 = epoch_stage1
-        self.epoch_stage2 = epoch_stage2
-        self.epoch_total = epoch_total
-        self.best_loss = 9999
+        self.epoch_stage1 = args.epoch_stage1
+        self.epoch_stage2 = args.epoch_stage2
+        self.epoch_total = args.epoch_total
+        self.best_weight_path = get_best_weight_path(args, verbose=False)
+        self.latest_weight_path = get_latest_weight_path(args, verbose=False)
 
     def compute_loss(self, pred, target, mask, alpha=0.95):
         """计算加权的损失值"""
         return alpha * self.criterion(pred, target, mask) + (1 - alpha) * self.criterion(pred, target, 1 - mask)
 
-    def save_model(self, epoch, loss, weight_path="best.pth"):
+    def save_model(self, epoch, loss, weight_path: str):
         torch.save({
             'epoch': epoch,
             'model_stage1': self.stage1.state_dict(),
@@ -45,7 +46,7 @@ class ModelTrainer:
             'lr_scheduler_stage2': self.lr_scheduler_stage2.state_dict(),
             'lr_scheduler_resbranch': self.lr_scheduler_resbranch.state_dict(),
             'loss': loss
-        }, os.path.join(self.model_path, weight_path))
+        }, weight_path)
 
     def save_epoch_model(self, epoch, loss):
         # 每 10 个 epoch 保存一次模型
@@ -58,7 +59,7 @@ class ModelTrainer:
         #         'model_resbranch': self.resbranch.state_dict(),
         #         'loss': loss
         #     }, os.path.join(self.model_path, f'model_{epoch}.pth'))
-        self.save_model(epoch, loss, weight_path="last.pth")
+        self.save_model(epoch, loss, weight_path=self.latest_weight_path)
 
     def train_one_epoch(self, data_loader_train, epoch, interval=1):
         loss_gbs = []
@@ -80,6 +81,7 @@ class ModelTrainer:
                                                              self.optimizer_resbranch.param_groups[0]["lr"]))
             current_stage = 3
         print('-' * 20)
+        best_loss = 999
         data_loader_train = tqdm(data_loader_train, file=sys.stdout)
         for images, _ in data_loader_train:
 
@@ -140,9 +142,9 @@ class ModelTrainer:
         # print(f'train epoch: {epoch}, loss: {loss_gbs_v}')
 
         self.save_epoch_model(epoch, loss_gbs_v)
-        if loss_gbs_v < self.best_loss:
+        if current_stage == 3 and loss_gbs_v < best_loss:
             self.best_loss = loss_gbs_v
-            self.save_model(epoch, loss_gbs_v, weight_path="best.pth")
+            self.save_model(epoch, loss_gbs_v, weight_path=self.best_weight_path)
 
         # 记录日志
         log_str = f" train epoch: {epoch} loss_gb: {loss_gbs_v}"

@@ -6,7 +6,7 @@ from torch import optim
 from dataset import *
 from model_tester import ModelTester
 from model_trainer import ModelTrainer
-from parse_args import get_device, parse_args, check_dir, get_model, get_best_weight_path
+from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path
 from utils import *
 
 
@@ -60,7 +60,7 @@ def train():
     lr_scheduler_resbranch = torch.optim.lr_scheduler.LambdaLR(optimizer_resbranch, lr_lambda=lf)
 
     last_epoch = 0
-    weight_path = get_best_weight_path(args)
+    weight_path = get_latest_weight_path(args)
     if args.resume:
         if os.path.exists(weight_path):
             last_epoch = load_checkpoint(weight_path, stage1, stage2, resbranch, optimizer_stage1,
@@ -80,7 +80,7 @@ def train():
     criterion = MixedPix2PixLoss_mask(alpha=0.5).to(device)
 
     model_trainer = ModelTrainer(
-        model_path=args.model_path,
+        args,
         stage1=stage1,
         stage2=stage2,
         resbranch=resbranch,
@@ -93,9 +93,6 @@ def train():
         criterion=criterion,
         device=device,
         logger=logger,
-        epoch_stage1=args.epoch_stage1,
-        epoch_stage2=args.epoch_stage2,
-        epoch_total=args.epoch_total
     )
 
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,
