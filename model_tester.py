@@ -1,5 +1,6 @@
 import sys
 
+import SimpleITK as sitk
 import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
@@ -11,6 +12,21 @@ plt.switch_backend('agg')
 
 synthrad_metrics_stage1 = ImageMetrics(dynamic_range=[-150., 850.])
 synthrad_metrics_stage2_stage3 = ImageMetrics(dynamic_range=[-1024., 3000.])
+
+
+def save_array_as_nii(array, file_path, reference=None):
+    """
+    Save a NumPy array as a NIfTI file using SimpleITK.
+
+    Args:
+        array (numpy.ndarray): The array to save.
+        file_path (str): The path to save the NIfTI file.
+        reference (SimpleITK.Image): Optional reference image for setting metadata.
+    """
+    sitk_image = sitk.GetImageFromArray(array)
+    if reference is not None:
+        sitk_image.CopyInformation(reference)
+    sitk.WriteImage(sitk_image, file_path)
 
 
 class ModelTester:
@@ -143,7 +159,6 @@ class ModelTester:
         return metrics
 
     def test(self, data_loader_test, epoch):
-        """封装后的测试函数"""
         self.stage1.eval()
         self.stage2.eval()
         self.resbranch.eval()
@@ -191,8 +206,44 @@ class ModelTester:
 
         return {'psnr': avg_psnr, 'ssim': avg_ssim, 'mae': avg_mae}
 
+    def predict(self, data_loader_test):
+        self.stage1.eval()
+        self.stage2.eval()
+        self.resbranch.eval()
+
+        # ds_len = len(data_loader_test)
+        # metrics = np.zeros((1, 3, ds_len))
+        out_results, ct_results, mask_results = [], [], []
+        with torch.no_grad():
+            for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):
+                images = images.to(self.device)
+                origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
+
+                stage1_out = self.stage1(origin_cbct * mask)
+
+                stage2_out = self.stage2(stage1_out * mask)
+                stage3_out = self.resbranch(origin_cbct * mask)
+                # stage3_out = (stage2_out + stage3_out) / 2
+                final_out = torch.tanh(stage2_out + stage3_out)
+
+                out_cal, ct_cal, mask_cal = process(final_out, origin_ct, image_locations, mask)
+                out_results.append(np.expand_dims(out_cal, axis=0))
+                ct_results.append(np.expand_dims(ct_cal, axis=0))
+                mask_results.append(np.expand_dims(mask_cal, axis=0))
+                # global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
+                # print(global_metrics)
+
+        out_results = np.concatenate(out_results, axis=0)
+        ct_results = np.concatenate(ct_results, axis=0)
+        mask_results = np.concatenate(mask_results, axis=0)
+        print(out_results.shape)
+        save_array_as_nii(out_results, "./result/out_results.nii.gz")
+        save_array_as_nii(ct_results, "./result/ct_results.nii.gz")
+        save_array_as_nii(mask_results, "./result/mask_results.nii.gz")
+
 
 if __name__ == '__main__':
-    from test import test
+    from predict import predict
 
-    test()
+    # test()
+    predict()

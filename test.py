@@ -2,7 +2,7 @@ import datetime
 
 from dataset import *
 from model_tester import ModelTester
-from parse_args import get_device, parse_args, check_dir, get_model, get_best_weight_path
+from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path
 from utils import *
 
 
@@ -16,7 +16,8 @@ def test():
     stage1, stage2, resbranch = get_model(args)
 
     print('Loading checkpoint...')
-    weight_path = get_best_weight_path(args)
+    # weight_path = get_best_weight_path(args)
+    weight_path = get_latest_weight_path(args)
     checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
     stage1.load_state_dict(checkpoint['model_stage1'])
     stage2.load_state_dict(checkpoint['model_stage2'])

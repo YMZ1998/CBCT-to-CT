@@ -37,12 +37,13 @@ def remove_and_create_dir(path):
 
 
 def check_dir(args):
-    ensure_dir_exists(args.model_path)
-    ensure_dir_exists(args.log_path)
-    ensure_dir_exists(args.visual_path)
-    if os.path.exists(args.visual_path):
-        shutil.rmtree(args.visual_path)
-    os.makedirs(args.visual_path, exist_ok=True)
+    ensure_dir_exists('./result')
+    ensure_dir_exists('./checkpoint')
+    ensure_dir_exists('./log')
+    ensure_dir_exists('./visualization')
+    # if os.path.exists(args.visual_path):
+    #     shutil.rmtree(args.visual_path)
+    # os.makedirs(args.visual_path, exist_ok=True)
 
 
 def get_model(args):
@@ -78,13 +79,13 @@ def parse_args():
     # 添加命令行参数
     parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet//efficientnet_b0')
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
-    parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")
+    parser.add_argument('--resume', default=True, type=bool, help="Resume from the last checkpoint")
     parser.add_argument('--wandb', default=False, type=bool, help="Enable wandb logging")
     parser.add_argument('--project_name', type=str, default='synthRAD_CBCT_to_CT', help="Wandb project name")
     parser.add_argument('--epoch_stage1', type=int, default=epoch_step, help="Epoch count for stage 1")
     parser.add_argument('--epoch_stage2', type=int, default=epoch_step * 2, help="Epoch count for stage 2")
     parser.add_argument('--epoch_total', type=int, default=epoch_step * 4, help="Total epoch count")
-    parser.add_argument('--batch_size', type=int, default=2, help="Batch size")
+    parser.add_argument('--batch_size', type=int, default=4, help="Batch size")
     parser.add_argument('--learning_rate', type=float, default=5e-4, help="Learning rate")
     parser.add_argument('--model_path', type=str, default='checkpoint', help="Path to save model checkpoints")
     parser.add_argument('--dataset_path', type=str, default='./dataset')

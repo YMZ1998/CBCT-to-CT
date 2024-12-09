@@ -30,7 +30,7 @@ def set_seed(seed: int):
     print(f'Seed set to {seed} for all libraries (Python, NumPy, PyTorch)')
 
 
-def get_logger(log_path='log_path'):
+def get_logger(log_path):
     if not os.path.exists(log_path):
         os.mkdir(log_path)
     timer = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
