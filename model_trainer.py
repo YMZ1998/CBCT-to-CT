@@ -26,23 +26,13 @@ class ModelTrainer:
         self.epoch_stage1 = epoch_stage1
         self.epoch_stage2 = epoch_stage2
         self.epoch_total = epoch_total
+        self.best_loss = 9999
 
     def compute_loss(self, pred, target, mask, alpha=0.95):
         """计算加权的损失值"""
         return alpha * self.criterion(pred, target, mask) + (1 - alpha) * self.criterion(pred, target, 1 - mask)
 
-    def save_model(self, epoch, loss):
-        # 每 10 个 epoch 保存一次模型
-        if epoch % 10 == 0:
-            """保存模型和优化器状态"""
-            torch.save({
-                'epoch': epoch,
-                'model_stage1': self.stage1.state_dict(),
-                'model_stage2': self.stage2.state_dict(),
-                'model_resbranch': self.resbranch.state_dict(),
-                'loss': loss
-            }, os.path.join(self.model_path, f'model_{epoch}.pth'))
-
+    def save_model(self, epoch, loss, weight_path="best.pth"):
         torch.save({
             'epoch': epoch,
             'model_stage1': self.stage1.state_dict(),
@@ -55,7 +45,20 @@ class ModelTrainer:
             'lr_scheduler_stage2': self.lr_scheduler_stage2.state_dict(),
             'lr_scheduler_resbranch': self.lr_scheduler_resbranch.state_dict(),
             'loss': loss
-        }, os.path.join(self.model_path, 'last.pth'))
+        }, os.path.join(self.model_path, weight_path))
+
+    def save_epoch_model(self, epoch, loss):
+        # 每 10 个 epoch 保存一次模型
+        # if epoch % 10 == 0:
+        #     """保存模型和优化器状态"""
+        #     torch.save({
+        #         'epoch': epoch,
+        #         'model_stage1': self.stage1.state_dict(),
+        #         'model_stage2': self.stage2.state_dict(),
+        #         'model_resbranch': self.resbranch.state_dict(),
+        #         'loss': loss
+        #     }, os.path.join(self.model_path, f'model_{epoch}.pth'))
+        self.save_model(epoch, loss, weight_path="last.pth")
 
     def train_one_epoch(self, data_loader_train, epoch, interval=1):
         loss_gbs = []
@@ -125,7 +128,7 @@ class ModelTrainer:
                 loss_gbs.append(loss_gb3.item())
                 loss_gb3.backward()
                 self.optimizer_resbranch.step()
-            data_loader_train.desc = f"[train epoch {epoch}] loss: {np.sum(loss_gbs):.4f} "
+            data_loader_train.desc = f"[train epoch {epoch}] loss: {np.mean(loss_gbs):.4f} "
         if current_stage == 1:
             self.lr_scheduler_stage1.step()
         elif current_stage == 2:
@@ -133,10 +136,13 @@ class ModelTrainer:
         else:
             self.lr_scheduler_resbranch.step()
 
-        loss_gbs_v = np.sum(loss_gbs)
+        loss_gbs_v = np.mean(loss_gbs)
         # print(f'train epoch: {epoch}, loss: {loss_gbs_v}')
 
-        self.save_model(epoch, loss_gbs_v)
+        self.save_epoch_model(epoch, loss_gbs_v)
+        if loss_gbs_v < self.best_loss:
+            self.best_loss = loss_gbs_v
+            self.save_model(epoch, loss_gbs_v, weight_path="best.pth")
 
         # 记录日志
         log_str = f" train epoch: {epoch} loss_gb: {loss_gbs_v}"

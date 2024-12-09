@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from attention import TripletAttention
+from network.attention import TripletAttention
 
 warnings.filterwarnings("ignore")
 

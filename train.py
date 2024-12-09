@@ -6,13 +6,13 @@ from torch import optim
 from dataset import *
 from model_tester import ModelTester
 from model_trainer import ModelTrainer
-from parse_args import get_device, parse_args, check_dir, get_model
+from parse_args import get_device, parse_args, check_dir, get_model, get_best_weight_path
 from utils import *
 
 
 def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2,
                     optimizer_resbranch, lr_scheduler_stage1, lr_scheduler_stage2, lr_scheduler_resbranch):
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, weights_only=False, map_location='cpu')
 
     stage1.load_state_dict(checkpoint['model_stage1'])
     stage2.load_state_dict(checkpoint['model_stage2'])
@@ -38,8 +38,8 @@ def train():
     device = get_device()
     logger = get_logger(args.log_path)
 
-    dataset_train_path = args.dataset_path[0] if args.anatomy == 'brain' else args.dataset_path[2]
-    dataset_test_path = args.dataset_path[1] if args.anatomy == 'brain' else args.dataset_path[3]
+    dataset_train_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'train' in p]
+    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'test' in p]
 
     if args.wandb:
         assert wandb.run is None
@@ -60,19 +60,20 @@ def train():
     lr_scheduler_resbranch = torch.optim.lr_scheduler.LambdaLR(optimizer_resbranch, lr_lambda=lf)
 
     last_epoch = 0
+    weight_path = get_best_weight_path(args)
     if args.resume:
-        if os.path.exists(args.checkpoint_path):
-            last_epoch = load_checkpoint(args.checkpoint_path, stage1, stage2, resbranch, optimizer_stage1,
+        if os.path.exists(weight_path):
+            last_epoch = load_checkpoint(weight_path, stage1, stage2, resbranch, optimizer_stage1,
                                          optimizer_stage2, optimizer_resbranch, lr_scheduler_stage1,
                                          lr_scheduler_stage2, lr_scheduler_resbranch)
         else:
             print('No checkpoint found, starting from scratch.')
 
     print('Training...')
-    dataset_train = CreateDataset(dataset_path=dataset_train_path)
+    dataset_train = CreateDataset(dataset_train_path)
     data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True,
                                                     num_workers=4, pin_memory=True, drop_last=True)
-    dataset_test = CreateDataset(dataset_path=dataset_test_path)
+    dataset_test = CreateDataset(dataset_test_path)
     data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
                                                    pin_memory=True, drop_last=True)
 
@@ -103,7 +104,8 @@ def train():
     start_time = time.time()
     for epoch in range(last_epoch + 1, args.epoch_total + 1):
         train_loss = model_trainer.train_one_epoch(data_loader_train, epoch, interval=2)
-        test_metrics = model_tester.test(data_loader_test, epoch)
+        if epoch % 3 == 0:
+            test_metrics = model_tester.test(data_loader_test, epoch)
         if args.wandb:
             wandb.log({
                 "train loss": train_loss,

@@ -25,7 +25,7 @@ class ModelTester:
         self.save_all = save_all
 
     def save_visualization(self, epoch, iteration, metrics, show_cbct, show_origin_ct, show_stage1_out,
-                           mask, show_enhanced_ct, show_stage2_out=None, show_stage3_out=None):
+                           mask, show_enhanced_ct, show_stage2_out=None, show_stage3_out=None, show_final_out=None):
         # print("show_cbct", np.min(show_cbct), np.max(show_cbct))
         # print("show_origin_ct", np.min(show_origin_ct), np.max(show_origin_ct))
         # print("show_stage1_out", np.min(show_stage1_out), np.max(show_stage1_out))
@@ -33,53 +33,80 @@ class ModelTester:
         # print("show_stage3_out", np.min(show_stage3_out), np.max(show_stage3_out))
         # print("mask", np.min(mask), np.max(mask))
         # 创建一个图形
-        fig = plt.figure(figsize=(18, 3), dpi=100, tight_layout=True)
+        fig = plt.figure(figsize=(9, 6), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
 
         # 显示 CBCT 图像
-        plt.subplot(1, 6, 1)
+        plt.subplot(2, 4, 1)
         plt.axis("off")
         plt.imshow(show_cbct[2], cmap="gray")
         plt.title("CBCT")
 
         # 显示原始 CT 图像
-        plt.subplot(1, 6, 2)
+        plt.subplot(2, 4, 2)
         plt.axis("off")
         plt.imshow(show_origin_ct, cmap="gray")
         plt.title("Original CT")
 
         # 显示增强后的 CT 图像
-        plt.subplot(1, 6, 3)
+        plt.subplot(2, 4, 3)
         plt.axis("off")
         plt.imshow(show_enhanced_ct, cmap="gray")
         plt.title("Enhanced CT")
 
-        # 显示阶段1的输出图像
-        plt.subplot(1, 6, 4)
+        # 显示 mask
+        plt.subplot(2, 4, 4)
         plt.axis("off")
-        plt.imshow(np.where(mask == 0, -1, show_stage1_out), cmap="gray")
+        if mask is not None:
+            plt.imshow(mask, cmap="gray")
+        plt.title("Mask")
+
+        # 显示阶段1的输出图像
+        plt.subplot(2, 4, 5)
+        plt.axis("off")
+        if mask is not None:
+            plt.imshow(np.where(mask == 0, -1, show_stage1_out), cmap="gray")
+        else:
+            plt.imshow(show_stage1_out, cmap="gray")
         plt.title("Stage 1 Output")
 
         # 显示阶段2的输出图像
         if show_stage2_out is not None:
-            plt.subplot(1, 6, 5)
+            plt.subplot(2, 4, 6)
             plt.axis("off")
-            plt.imshow(np.where(mask == 0, -1, show_stage2_out), cmap="gray")
+            if mask is not None:
+                plt.imshow(np.where(mask == 0, -1, show_stage2_out), cmap="gray")
+            else:
+                plt.imshow(show_stage2_out, cmap="gray")
             plt.title("Stage 2 Output")
 
         # 显示阶段3的输出图像
         if show_stage3_out is not None:
-            plt.subplot(1, 6, 6)
+            plt.subplot(2, 4, 7)
             plt.axis("off")
-            plt.imshow(np.where(mask == 0, -1, show_stage3_out), cmap="gray")
+            if mask is not None:
+                plt.imshow(np.where(mask == 0, -1, show_stage3_out), cmap="gray")
+            else:
+                plt.imshow(show_stage3_out, cmap="gray")
             plt.title("Stage 3 Output")
+
+        # 显示最终的输出图像
+        if show_final_out is not None:
+            plt.subplot(2, 4, 8)
+            plt.axis("off")
+            if mask is not None:
+                plt.imshow(np.where(mask == 0, -1, show_final_out), cmap="gray")
+            else:
+                plt.imshow(show_final_out, cmap="gray")
+            plt.title("Final Output")
         # plt.show()
         plt.subplots_adjust(top=0.85)
         plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
         plt.clf()
         plt.close(fig)
 
-    def process_output(self, stage1_out, stage2_out, stage3_out, origin_cbct, origin_mask, origin_ct, enhance_ct,
+    def process_output(self, stage1_out, stage2_out, stage3_out, final_out, origin_cbct, origin_mask, origin_ct,
+                       enhance_ct,
                        origin_location, epoch, iteration, slice_index, stage, metrics):
         """处理每一阶段的输出、计算指标并保存可视化结果"""
         if stage == 1:
@@ -90,7 +117,7 @@ class ModelTester:
             out_cal, ct_cal, mask_cal = process(stage2_out, origin_ct, origin_location, origin_mask)
             global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
         else:
-            out_cal, ct_cal, mask_cal = process(stage3_out, origin_ct, origin_location, origin_mask)
+            out_cal, ct_cal, mask_cal = process(final_out, origin_ct, origin_location, origin_mask)
             global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
 
         if iteration == slice_index or (self.save_all and iteration % 10 == 0):
@@ -102,10 +129,12 @@ class ModelTester:
             show_enhanced_ct = enhance_ct.detach().cpu().squeeze().numpy()
             show_stage2_out = stage2_out.detach().cpu().squeeze().numpy() if stage2_out is not None else None
             show_stage3_out = stage3_out.detach().cpu().squeeze().numpy() if stage3_out is not None else None
+            show_final_out_out = final_out.detach().cpu().squeeze().numpy() if final_out is not None else None
 
             # 保存图像
             self.save_visualization(epoch, iteration, global_metrics, show_cbct, show_origin_ct,
-                                    show_stage1_out, mask, show_enhanced_ct, show_stage2_out, show_stage3_out)
+                                    show_stage1_out, mask, show_enhanced_ct, show_stage2_out, show_stage3_out,
+                                    show_final_out_out)
 
         metrics[0, 0, iteration] = global_metrics['psnr']
         metrics[0, 1, iteration] = global_metrics['ssim']
@@ -121,7 +150,7 @@ class ModelTester:
 
         ds_len = len(data_loader_test)
         metrics = np.zeros((1, 3, ds_len))
-        slice_index = 120
+        slice_index = 300
 
         with torch.no_grad():
             for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):
@@ -132,20 +161,22 @@ class ModelTester:
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:
-                    metrics = self.process_output(stage1_out, None, None, origin_cbct, mask, origin_ct, enhance_ct,
+                    metrics = self.process_output(stage1_out, None, None, None, origin_cbct, mask, origin_ct,
+                                                  enhance_ct,
                                                   image_locations, epoch, iteration, slice_index, stage=1,
                                                   metrics=metrics)
                 elif epoch <= self.epoch_stage2:
                     stage2_out = self.stage2(stage1_out * mask)
-                    metrics = self.process_output(stage1_out, stage2_out, None, origin_cbct, mask, origin_ct,
+                    metrics = self.process_output(stage1_out, stage2_out, None, None, origin_cbct, mask, origin_ct,
                                                   enhance_ct, image_locations, epoch, iteration, slice_index, stage=2,
                                                   metrics=metrics)
                 else:
                     stage2_out = self.stage2(stage1_out * mask)
                     stage3_out = self.resbranch(origin_cbct * mask)
                     # stage3_out = (stage2_out + stage3_out) / 2
-                    stage3_out = torch.tanh(stage2_out + stage3_out)
-                    metrics = self.process_output(stage1_out, stage2_out, stage3_out, origin_cbct, mask, origin_ct,
+                    final_out = torch.tanh(stage2_out + stage3_out)
+                    metrics = self.process_output(stage1_out, stage2_out, stage3_out, final_out, origin_cbct, mask,
+                                                  origin_ct,
                                                   enhance_ct, image_locations, epoch, iteration, slice_index, stage=3,
                                                   metrics=metrics)
 

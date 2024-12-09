@@ -5,6 +5,7 @@ import SimpleITK as sitk
 import numpy as np
 import torch.utils.data
 from matplotlib import pyplot as plt
+from torch.utils.data import ConcatDataset, TensorDataset
 from tqdm import tqdm
 
 MASK_POINT = []
@@ -203,10 +204,13 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
 
     dataset_dirs = [d for d in os.listdir(path) if d != '.DS_Store']
     random.shuffle(dataset_dirs)
+    print('dataset dirs: ', dataset_dirs)
 
     cbct_vecs, ct_vecs, enhance_ct_vecs, mask_vecs, location_vecs = [], [], [], [], []
-
+    batch_size = 256
+    batch_idx = 0
     for dir in tqdm(dataset_dirs, total=len(dataset_dirs), desc="Processing cases"):
+
         case_path = os.path.join(path, dir)
         cbct_path = os.path.join(case_path, 'cbct.nii.gz')
         ct_path = os.path.join(case_path, 'ct.nii.gz')
@@ -243,25 +247,36 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
             enhance_ct_vecs.append(enhance_ct_padded[index])
             mask_vecs.append(mask_padded[index])
 
-    # 转换为 NumPy 数组并调整维度
-    cbct_np = np.array(cbct_vecs)
-    ct_np = np.expand_dims(np.array(ct_vecs), axis=1)
-    enhance_ct_np = np.expand_dims(np.array(enhance_ct_vecs), axis=1)
-    mask_np = np.expand_dims(np.array(mask_vecs), axis=1).astype(np.float32)
-    locations = np.concatenate(location_vecs, axis=0).astype(np.float32)
+        if len(cbct_vecs) > batch_size:
+            print(len(cbct_vecs))
+            # 获取当前批次数据
+            cbct_batch = np.array(cbct_vecs[:batch_size])
+            ct_batch = np.expand_dims(np.array(ct_vecs[:batch_size]), axis=1)
+            enhance_ct_batch = np.expand_dims(np.array(enhance_ct_vecs[:batch_size]), axis=1)
+            mask_batch = np.expand_dims(np.array(mask_vecs[:batch_size]), axis=1).astype(np.float32)
+            locations_batch = np.concatenate(location_vecs[:batch_size], axis=0).astype(np.float32)
+            cbct_vecs = cbct_vecs[batch_size:]
+            ct_vecs = ct_vecs[batch_size:]
+            enhance_ct_vecs = enhance_ct_vecs[batch_size:]
+            mask_vecs = mask_vecs[batch_size:]
+            location_vecs = location_vecs[batch_size:]
 
-    # 打印统计信息
-    print(
-        f"Shapes - CBCT: {cbct_np.shape}, CT: {ct_np.shape}, Enhanced CT: {enhance_ct_np.shape}, Mask: {mask_np.shape}, Location: {locations.shape}")
-    print(f"CBCT min: {cbct_np.min()}, max: {cbct_np.max()}")
-    print(f"CT min: {ct_np.min()}, max: {ct_np.max()}")
-    print(f"Enhanced CT min: {enhance_ct_np.min()}, max: {enhance_ct_np.max()}")
-    print(f"Mask min: {mask_np.min()}, max: {mask_np.max()}")
+            # 打印统计信息
+            print(
+                f"Shapes - CBCT: {cbct_batch.shape}, CT: {ct_batch.shape}, Enhanced CT: {enhance_ct_batch.shape}, Mask: {mask_batch.shape}, Location: {locations_batch.shape}")
+            print(f"CBCT min: {cbct_batch.min()}, max: {cbct_batch.max()}")
+            print(f"CT min: {ct_batch.min()}, max: {ct_batch.max()}")
+            print(f"Enhanced CT min: {enhance_ct_batch.min()}, max: {enhance_ct_batch.max()}")
+            print(f"Mask min: {mask_batch.min()}, max: {mask_batch.max()}")
 
-    # 保存数据集
-    dataset_name = os.path.join(save_path, f'synthRAD_interval_{interval}_{p}_{t}.npz')
-    print(f"Saving dataset to: {dataset_name}")
-    np.savez(dataset_name, images=np.concatenate((cbct_np, ct_np, enhance_ct_np, mask_np), axis=1), locations=locations)
+            # 合并数据
+            images_batch = np.concatenate((cbct_batch, ct_batch, enhance_ct_batch, mask_batch), axis=1)
+
+            # 保存数据集到 .npz 文件
+            dataset_name = os.path.join(save_path, f'synthRAD_interval_{interval}_{p}_{t}_batch_{batch_idx + 1}.npz')
+            print(f"Saving batch {batch_idx + 1} to: {dataset_name}")
+            np.savez_compressed(dataset_name, images=images_batch, locations=locations_batch)
+            batch_idx = batch_idx + 1
 
 
 def load_npz_data(dataset_path):
@@ -276,17 +291,25 @@ def load_npz_data(dataset_path):
     return ds['images'], ds['locations']
 
 
-def CreateDataset(dataset_path):
-    print("dataset path:", dataset_path)
-    img, location = load_npz_data(dataset_path)
-    print("img shape:", img.shape)
-    print("location shape:", location.shape)
-    dataset = torch.utils.data.TensorDataset(torch.from_numpy(img), torch.from_numpy(location))
-    return dataset
+def CreateDataset(dataset_paths):
+    all_datasets = []
+
+    # 加载每个数据集
+    for dataset_path in dataset_paths:
+        print("dataset path:", dataset_path)
+        img, location = load_npz_data(dataset_path)
+        # print("img shape:", img.shape)
+        # print("location shape:", location.shape)
+
+        dataset = TensorDataset(torch.from_numpy(img), torch.from_numpy(location))
+        all_datasets.append(dataset)
+
+    combined_dataset = ConcatDataset(all_datasets)
+    return combined_dataset
 
 
 def check_dataset():
-    images, image_locations = load_npz_data('./dataset/synthRAD_interval_1_brain_test.npz')
+    images, image_locations = load_npz_data('./dataset/synthRAD_interval_1_brain_test_batch_1.npz')
     print("images shape:", images.shape)
     # origin_cbct, origin_ct, enhance_ct, mask = np.split(images, [5, 1, 1, 1], dim=1)
     origin_cbct, origin_ct, enhance_ct, mask = np.split(images[100], [5, 6, 7], axis=0)
@@ -315,9 +338,9 @@ def check_dataset():
 
 def generate_dataset():
     brain_shape = [320, 320]
-    generate_train_test_dataset('./data/train/brain', padding=brain_shape, p='brain', t='train', interval=2,
+    generate_train_test_dataset('./data/brain/train', padding=brain_shape, p='brain', t='train', interval=2,
                                 save_path='./dataset')
-    generate_train_test_dataset('./data/test/brain', padding=brain_shape, p='brain', t='test', interval=1,
+    generate_train_test_dataset('./data/brain/test', padding=brain_shape, p='brain', t='test', interval=1,
                                 save_path='./dataset')
 
     # generate_train_test_dataset('./data/train/pelvis', padding=[592, 416], p='pelvis', t='train', interval=2,
