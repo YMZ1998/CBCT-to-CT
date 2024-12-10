@@ -12,7 +12,7 @@ def test():
     device = get_device()
     logger = get_logger(args.log_path)
 
-    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'test' in p]
+    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'test' in p][:1]
     stage1, stage2, resbranch = get_model(args)
 
     print('Loading checkpoint...')

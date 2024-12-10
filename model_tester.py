@@ -172,7 +172,7 @@ class ModelTester:
 
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
-
+                mask.fill_(1.0)
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:
@@ -211,27 +211,24 @@ class ModelTester:
         self.stage2.eval()
         self.resbranch.eval()
 
-        # ds_len = len(data_loader_test)
-        # metrics = np.zeros((1, 3, ds_len))
         out_results, ct_results, mask_results = [], [], []
         with torch.no_grad():
             for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
 
+                mask.fill_(1)
+
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 stage2_out = self.stage2(stage1_out * mask)
                 stage3_out = self.resbranch(origin_cbct * mask)
-                # stage3_out = (stage2_out + stage3_out) / 2
                 final_out = torch.tanh(stage2_out + stage3_out)
 
                 out_cal, ct_cal, mask_cal = process(final_out, origin_ct, image_locations, mask)
                 out_results.append(np.expand_dims(out_cal, axis=0))
                 ct_results.append(np.expand_dims(ct_cal, axis=0))
                 mask_results.append(np.expand_dims(mask_cal, axis=0))
-                # global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
-                # print(global_metrics)
 
         out_results = np.concatenate(out_results, axis=0)
         ct_results = np.concatenate(ct_results, axis=0)
@@ -244,6 +241,7 @@ class ModelTester:
 
 if __name__ == '__main__':
     from predict import predict
+    from test import test
 
     # test()
     predict()

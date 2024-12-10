@@ -74,7 +74,7 @@ def train():
     data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True,
                                                     num_workers=4, pin_memory=True, drop_last=True)
     dataset_test = CreateDataset(dataset_test_path)
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=4, shuffle=False, num_workers=4,
                                                    pin_memory=True, drop_last=True)
 
     criterion = MixedPix2PixLoss_mask(alpha=0.5).to(device)

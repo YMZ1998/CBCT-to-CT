@@ -5,7 +5,8 @@ def process(out, ct, lct, mask, min_v=-1024, max_v=3000):
     out = out.detach().cpu().squeeze().numpy()
     ct = ct.detach().cpu().squeeze().numpy()
     lct = lct.squeeze().numpy()
-    mask = mask.detach().cpu().squeeze().numpy()
+    if mask is not None:
+        mask = mask.detach().cpu().squeeze().numpy()
 
     out = (out + 1) / 2
     ct = (ct + 1) / 2
@@ -22,7 +23,8 @@ def process(out, ct, lct, mask, min_v=-1024, max_v=3000):
     # 裁剪出图像区域
     out = out[y_min:y_max, x_min:x_max]
     ct = ct[y_min:y_max, x_min:x_max]
-    mask = mask[y_min:y_max, x_min:x_max]
+    if mask is not None:
+        mask = mask[y_min:y_max, x_min:x_max]
     # print("out", np.min(out), np.max(out))
     # print("ct", np.min(ct), np.max(ct))
     # print("mask", np.min(mask), np.max(mask))

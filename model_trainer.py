@@ -87,7 +87,7 @@ class ModelTrainer:
 
             images = images.to(self.device)
             origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
-
+            mask.fill_(1.0)
             # Training Stage 1
             if current_stage == 1:
                 self.optimizer_stage1.zero_grad()
