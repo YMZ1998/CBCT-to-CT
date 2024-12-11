@@ -42,7 +42,7 @@ Brain_Pelvis
 
 ### Result
 
-![image](https://github.com/YMZ1998/CBCT-to-CT/blob/main/figure/result.png)
+![image](./figure/result.png)
 
 ### Environment
 
