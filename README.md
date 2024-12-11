@@ -1,11 +1,48 @@
-## CBCT-to-CT
+# [CBCT-to-CT](https://github.com/YMZ1998/CBCT-to-CT)
 
 CBCT (Cone Beam Computed Tomography) generates pseudo CT images, which are essential for applications where traditional
 CT scans are unavailable or difficult to acquire.
 
-Dataset: [synthrad2023](https://synthrad2023.grand-challenge.org/)
+## Dataset
 
-Reference: [A Simple Two-stage Residual Network for MR-CT Translation](https://github.com/ZhangZhiHao233/MR-to-CT)
+[Synthrad2023](https://synthrad2023.grand-challenge.org/)
+
+Data structure is like
+
+```
+Brain_Pelvis
+-train
+|-brain
+  |-1BA001
+    |-ct.nii.gz
+    |-mr.nii.gz
+    |-mask.nii.gz
+  |- ...
+  |-1BA005
+    |-ct.nii.gz
+    |-mr.nii.gz
+    |-mask.nii.gz
+|-pelvis
+  |-1PA001
+    |-ct.nii.gz
+    |-mr.nii.gz
+    |-mask.nii.gz
+  |- ...
+  |-1PA004
+    |-ct.nii.gz
+    |-mr.nii.gz
+    |-mask.nii.gz
+
+-test
+|-brain
+  |- ...
+|-pelvis
+  |- ...
+```
+
+### Result
+
+![image](https://github.com/YMZ1998/CBCT-to-CT/figure/result.png)
 
 ### Environment
 
@@ -73,3 +110,7 @@ CBCT2CT.exe --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii
 - `--mask_path ./test_data/mask.nii.gz`: Path to the input mask file.
 - `--result_path ./result`: Path where the results will be saved.
 - `--onnx_path ./checkpoint/cbct2ct.onnx`: Path to the ONNX model.
+
+## Reference
+
+[A Simple Two-stage Residual Network for MR-CT Translation](https://github.com/ZhangZhiHao233/MR-to-CT)
