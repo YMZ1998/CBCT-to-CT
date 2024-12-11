@@ -78,6 +78,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train or test the CBCT to CT model")
     # 添加命令行参数
     parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet//efficientnet_b0')
+    parser.add_argument("--image_size", default=320, type=int)
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
     parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")
     parser.add_argument('--wandb', default=False, type=bool, help="Enable wandb logging")
@@ -111,18 +112,19 @@ if __name__ == '__main__':
 
 
     class Model(torch.nn.Module):
-        def __init__(self, stage1, stage2, resbranch):
+        def __init__(self, stage1, stage2, resbranch, mask):
             super(Model, self).__init__()
             self.stage1 = stage1
             self.stage2 = stage2
             self.resbranch = resbranch
+            self.mask = mask
 
         def forward(self, x):
-            x1 = self.stage1(x)
-            x2 = self.stage2(x1)
-            x3 = self.resbranch(x)
-            return x2 + x3
+            x1 = self.stage1(x * self.mask)
+            x2 = self.stage2(x1 * self.mask)
+            x3 = self.resbranch(x * self.mask)
+            return torch.tanh(x2 + x3)
 
 
-    model = Model(stage1, stage2, resbranch).to(device)
+    model = Model(stage1, stage2, resbranch, torch.ones(1, 1, image_size, image_size).to('cuda')).to(device)
     summary(model, (5, image_size, image_size))

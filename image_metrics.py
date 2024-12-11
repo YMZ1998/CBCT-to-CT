@@ -1,6 +1,6 @@
-
 from typing import Optional
 
+import SimpleITK as sitk
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from skimage.util.arraycrop import crop
@@ -165,17 +165,19 @@ class ImageMetrics:
             return float(ssim_value_full)
 
 
-if __name__ == '__main__':
-    import SimpleITK as sitk
+def compute_metrics(origin_ct_path, predict_path, mask_path):
     metrics = ImageMetrics()
-    ground_truth_path = "./result/ct_results.nii.gz"
-    predicted_path = "./result/out_results.nii.gz"
-    mask_path = "./result/mask_results.nii.gz"
-    gt = sitk.ReadImage(ground_truth_path)
-    pred = sitk.ReadImage(predicted_path)
+    gt = sitk.ReadImage(origin_ct_path)
+    pred = sitk.ReadImage(predict_path)
     mask = sitk.ReadImage(mask_path)
-    # Get numpy array from SITK Image
     gt_array = sitk.GetArrayFromImage(gt)
     pred_array = sitk.GetArrayFromImage(pred)
     mask_array = sitk.GetArrayFromImage(mask)
     print(metrics.score_patient(gt_array, pred_array, mask_array))
+
+
+if __name__ == '__main__':
+    origin_ct_path = "./result/origin_ct.nii.gz"
+    predict_path = "./result/predict.nii.gz"
+    mask_path = "./result/origin_mask.nii.gz"
+    compute_metrics(origin_ct_path, predict_path, mask_path)

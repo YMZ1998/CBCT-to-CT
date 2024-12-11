@@ -40,6 +40,12 @@ class ModelTester:
         self.logger = logger
         self.save_all = save_all
 
+    def load_model_weights(self, weight_path):
+        """Load model weights from checkpoint."""
+        checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
+        self.stage1.load_state_dict(checkpoint['model_stage1'])
+        self.stage2.load_state_dict(checkpoint['model_stage2'])
+        self.resbranch.load_state_dict(checkpoint['model_resbranch'])
     def save_visualization(self, epoch, iteration, metrics, show_cbct, show_origin_ct, show_stage1_out,
                            mask, show_enhanced_ct, show_stage2_out=None, show_stage3_out=None, show_final_out=None):
         # print("show_cbct", np.min(show_cbct), np.max(show_cbct))
@@ -236,9 +242,9 @@ class ModelTester:
         ct_results = np.concatenate(ct_results, axis=0)
         mask_results = np.concatenate(mask_results, axis=0)
         print(out_results.shape)
-        save_array_as_nii(out_results, "./result/out_results.nii.gz")
-        save_array_as_nii(ct_results, "./result/ct_results.nii.gz")
-        save_array_as_nii(mask_results, "./result/mask_results.nii.gz")
+        save_array_as_nii(out_results, "./result/predict.nii.gz")
+        save_array_as_nii(ct_results, "./result/origin_ct.nii.gz")
+        save_array_as_nii(mask_results, "./result/origin_mask.nii.gz")
 
 
 if __name__ == '__main__':

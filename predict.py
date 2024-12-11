@@ -1,21 +1,14 @@
 import datetime
 
-from dataset import *
+import SimpleITK as sitk
+
 from dataset import normalize, mypadding, window_transform, generate_2_5d_slices
 from model_tester import ModelTester
 from parse_args import get_device, parse_args, get_model, get_latest_weight_path
 from utils import *
 
 
-def predict():
-    shape = [320, 320]
-    data_path = './data/brain/test'
-    case_path = [os.path.join(data_path, p) for p in os.listdir(data_path)][0]
-    print(case_path)
-    cbct_path = os.path.join(case_path, 'cbct.nii.gz')
-    ct_path = os.path.join(case_path, 'ct.nii.gz')
-    mask_path = os.path.join(case_path, 'mask.nii.gz')
-
+def load_data(cbct_path, ct_path, mask_path, shape):
     cbct = sitk.ReadImage(cbct_path)
     cbct = sitk.GetArrayFromImage(cbct)
     print(cbct.shape)
@@ -34,7 +27,21 @@ def predict():
     mask = sitk.ReadImage(mask_path)
     mask = sitk.GetArrayFromImage(mask)
     mask_padded, _ = mypadding(mask, shape[0], shape[1])
+    return cbct_padded, img_location, ct_padded, enhance_ct_padded, mask_padded
 
+
+def predict():
+    args = parse_args()
+    shape = [args.image_size, args.image_size]
+    data_path = './data/brain/test'
+    case_path = [os.path.join(data_path, p) for p in os.listdir(data_path)][0]
+    print(case_path)
+    cbct_path = os.path.join(case_path, 'cbct.nii.gz')
+    ct_path = os.path.join(case_path, 'ct.nii.gz')
+    mask_path = os.path.join(case_path, 'mask.nii.gz')
+
+    cbct_padded, img_location, ct_padded, enhance_ct_padded, mask_padded = load_data(cbct_path, ct_path, mask_path,
+                                                                                     shape)
     length = len(cbct_padded)
 
     cbct_vecs, ct_vecs, enhance_ct_vecs, mask_vecs, location_vecs = [], [], [], [], []
@@ -58,24 +65,19 @@ def predict():
     data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
                                                    pin_memory=True, drop_last=True)
 
-    args = parse_args()
     device = get_device()
     logger = get_logger(args.log_path)
 
     stage1, stage2, resbranch = get_model(args)
 
-    print('Loading checkpoint...')
-    weight_path = get_latest_weight_path(args)
-    checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
-    stage1.load_state_dict(checkpoint['model_stage1'])
-    stage2.load_state_dict(checkpoint['model_stage2'])
-    resbranch.load_state_dict(checkpoint['model_resbranch'])
-
-    print('Predict...')
-
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,
                                epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger,
                                save_all=True)
+    print('Loading checkpoint...')
+    weight_path = get_latest_weight_path(args)
+    model_tester.load_model_weights(weight_path)
+
+    print('Predict...')
 
     start_time = time.time()
     model_tester.predict(data_loader_test)
