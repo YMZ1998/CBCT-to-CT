@@ -160,14 +160,22 @@ class ImageMetrics:
             # crop(ssim_map, pad).mean(dtype=np.float64), with pad=3 by default.
             pad = 3
             ssim_value_masked = (crop(ssim_map, pad)[crop(mask, pad).astype(bool)]).mean(dtype=np.float64)
-            return ssim_value_masked
+            return float(ssim_value_masked)
         else:
-            return ssim_value_full
+            return float(ssim_value_full)
 
 
 if __name__ == '__main__':
+    import SimpleITK as sitk
     metrics = ImageMetrics()
-    ground_truth_path = "path/to/ground_truth.mha"
-    predicted_path = "path/to/prediction.mha"
-    mask_path = "path/to/mask.mha"
-    print(metrics.score_patient(ground_truth_path, predicted_path, mask_path))
+    ground_truth_path = "./result/ct_results.nii.gz"
+    predicted_path = "./result/out_results.nii.gz"
+    mask_path = "./result/mask_results.nii.gz"
+    gt = sitk.ReadImage(ground_truth_path)
+    pred = sitk.ReadImage(predicted_path)
+    mask = sitk.ReadImage(mask_path)
+    # Get numpy array from SITK Image
+    gt_array = sitk.GetArrayFromImage(gt)
+    pred_array = sitk.GetArrayFromImage(pred)
+    mask_array = sitk.GetArrayFromImage(mask)
+    print(metrics.score_patient(gt_array, pred_array, mask_array))

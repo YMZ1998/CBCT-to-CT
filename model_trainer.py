@@ -87,7 +87,7 @@ class ModelTrainer:
 
             images = images.to(self.device)
             origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
-            mask.fill_(1.0)
+            # mask.fill_(1.0)
             # Training Stage 1
             if current_stage == 1:
                 self.optimizer_stage1.zero_grad()
@@ -143,7 +143,7 @@ class ModelTrainer:
 
         self.save_epoch_model(epoch, loss_gbs_v)
         if current_stage == 3 and loss_gbs_v < best_loss:
-            self.best_loss = loss_gbs_v
+            best_loss = loss_gbs_v
             self.save_model(epoch, loss_gbs_v, weight_path=self.best_weight_path)
 
         # 记录日志

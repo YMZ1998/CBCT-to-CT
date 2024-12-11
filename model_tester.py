@@ -48,7 +48,6 @@ class ModelTester:
         # print("show_stage2_out", np.min(show_stage2_out), np.max(show_stage2_out))
         # print("show_stage3_out", np.min(show_stage3_out), np.max(show_stage3_out))
         # print("mask", np.min(mask), np.max(mask))
-        # 创建一个图形
         fig = plt.figure(figsize=(9, 6), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
 
@@ -172,7 +171,7 @@ class ModelTester:
 
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
-                mask.fill_(1.0)
+                # mask.fill_(1.0)
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:
@@ -217,7 +216,7 @@ class ModelTester:
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
 
-                mask.fill_(1)
+                # mask.fill_(1)
 
                 stage1_out = self.stage1(origin_cbct * mask)
 
@@ -226,6 +225,9 @@ class ModelTester:
                 final_out = torch.tanh(stage2_out + stage3_out)
 
                 out_cal, ct_cal, mask_cal = process(final_out, origin_ct, image_locations, mask)
+
+                out_cal = np.where(mask_cal == 0, -1000, out_cal)
+
                 out_results.append(np.expand_dims(out_cal, axis=0))
                 ct_results.append(np.expand_dims(ct_cal, axis=0))
                 mask_results.append(np.expand_dims(mask_cal, axis=0))
