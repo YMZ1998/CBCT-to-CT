@@ -6,7 +6,7 @@ import torch
 from tqdm import tqdm
 
 from image_metrics import *
-from post_process import process
+from post_process import post_process
 
 plt.switch_backend('agg')
 
@@ -131,14 +131,14 @@ class ModelTester:
                        origin_location, epoch, iteration, slice_index, stage, metrics):
         """处理每一阶段的输出、计算指标并保存可视化结果"""
         if stage == 1:
-            out_cal, ct_cal, mask_cal = process(stage1_out, enhance_ct, origin_location, origin_mask, min_v=-150,
-                                                max_v=850)
+            out_cal, ct_cal, mask_cal = post_process(stage1_out, enhance_ct, origin_location, origin_mask, min_v=-150,
+                                                     max_v=850)
             global_metrics = synthrad_metrics_stage1.score_patient(ct_cal, out_cal, mask_cal)
         elif stage == 2:
-            out_cal, ct_cal, mask_cal = process(stage2_out, origin_ct, origin_location, origin_mask)
+            out_cal, ct_cal, mask_cal = post_process(stage2_out, origin_ct, origin_location, origin_mask)
             global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
         else:
-            out_cal, ct_cal, mask_cal = process(final_out, origin_ct, origin_location, origin_mask)
+            out_cal, ct_cal, mask_cal = post_process(final_out, origin_ct, origin_location, origin_mask)
             global_metrics = synthrad_metrics_stage2_stage3.score_patient(ct_cal, out_cal, mask_cal)
 
         if iteration == slice_index or (self.save_all and iteration % 10 == 0):
@@ -230,7 +230,7 @@ class ModelTester:
                 stage3_out = self.resbranch(origin_cbct * mask)
                 final_out = torch.tanh(stage2_out + stage3_out)
 
-                out_cal, ct_cal, mask_cal = process(final_out, origin_ct, image_locations, mask)
+                out_cal, ct_cal, mask_cal = post_process(final_out, origin_ct, image_locations, mask)
 
                 out_cal = np.where(mask_cal == 0, -1000, out_cal)
 

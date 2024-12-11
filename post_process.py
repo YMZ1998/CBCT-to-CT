@@ -14,7 +14,7 @@ def to_numpy_squeeze(input_data):
         raise TypeError(f"Expected input to be a PyTorch tensor or a NumPy array, but got {type(input_data)}.")
 
 
-def process(out, ct, location, mask=None, min_v=-1024, max_v=3000):
+def post_process(out, ct, location, mask=None, min_v=-1024, max_v=3000):
     out = to_numpy_squeeze(out)
     ct = to_numpy_squeeze(ct) if ct is not None else None
     location = to_numpy_squeeze(location)

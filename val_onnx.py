@@ -8,11 +8,11 @@ import numpy as np
 import onnxruntime
 from tqdm import tqdm
 
-from dataset import generate_2_5d_slices, normalize, mypadding
+from dataset import generate_2_5d_slices, img_normalize, mypadding
 from image_metrics import ImageMetrics, compute_metrics
 from model_tester import save_array_as_nii
 from parse_args import remove_and_create_dir
-from post_process import process
+from post_process import post_process
 from predict import load_data
 
 
@@ -20,13 +20,13 @@ def load_data(cbct_path, ct_path, mask_path, shape):
     cbct = sitk.ReadImage(cbct_path)
     cbct = sitk.GetArrayFromImage(cbct)
     print(cbct.shape)
-    cbct = normalize(cbct, type='cbct')
+    cbct = img_normalize(cbct, type='cbct')
     cbct_padded, img_location = mypadding(cbct, shape[0], shape[1], -1)
     if args.ct_path is not None:
         ct = sitk.ReadImage(ct_path)
         ct = sitk.GetArrayFromImage(ct)
         ct_padded, _ = mypadding(ct, shape[0], shape[1], -1000)
-        ct_padded = normalize(ct_padded, type='ct')
+        ct_padded = img_normalize(ct_padded, type='ct')
     else:
         ct_padded = np.zeros_like(cbct_padded)
 
@@ -60,8 +60,8 @@ def val_onnx(args):
     mask_batch = np.expand_dims(np.array(mask_vecs[:]), axis=1).astype(np.float32)
     locations_batch = np.concatenate(location_vecs[:], axis=0).astype(np.float32)
 
-    onnx_file_name = "./checkpoint/{}_best_model.onnx".format(args.arch)
-    session = onnxruntime.InferenceSession(onnx_file_name)
+    # onnx_file_name = "./checkpoint/{}_best_model.onnx".format(args.arch)
+    session = onnxruntime.InferenceSession(args.onnx_path)
     start_time = time.time()
 
     out_results = []
@@ -74,7 +74,7 @@ def val_onnx(args):
                       session.get_inputs()[1].name: (mask)}
         result = session.run([output_name], ort_inputs)[0].squeeze(0)
 
-        out_cal, ct_cal, mask_cal = process(result, None, image_locations, mask)
+        out_cal, ct_cal, mask_cal = post_process(result, None, image_locations, mask)
         out_cal = np.where(mask_cal == 0, -1000, out_cal)
 
         out_results.append(np.expand_dims(out_cal, axis=0))
@@ -86,10 +86,9 @@ def val_onnx(args):
     mask_path = os.path.join(args.result_path, "origin_mask.nii.gz")
 
     save_array_as_nii(out_results, predict_path)
-    if args.ct_path is not None:
-        shutil.copy(args.ct_path, origin_ct_path)
     shutil.copy(args.mask_path, mask_path)
     if args.ct_path is not None:
+        shutil.copy(args.ct_path, origin_ct_path)
         compute_metrics(origin_ct_path, predict_path, mask_path)
     total_time = time.time() - start_time
     print("time {}s".format(total_time))
@@ -113,7 +112,8 @@ if __name__ == '__main__':
         usage='%(prog)s [options] --cbct_path <path> --mask_path <path> --result_path <path>',
         description="CBCT generates pseudo CT.")
     parser.add_argument("--image_size", default=320, type=int)
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='efficientnet_b0')
+    parser.add_argument('--onnx_path', type=str, default='"./checkpoint/efficientnet_b0_best_model.onnx"',
+                        help="Path to onnx")
     parser.add_argument('--cbct_path', type=str, required=True, help="Path to cbct file")
     parser.add_argument('--ct_path', type=str, help="Path to CT file")
     parser.add_argument('--mask_path', type=str, required=True, help="Path to mask file")

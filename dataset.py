@@ -8,50 +8,8 @@ from matplotlib import pyplot as plt
 from torch.utils.data import ConcatDataset, TensorDataset
 from tqdm import tqdm
 
-MASK_POINT = []
-MASK_AREA = []
 
-
-def generate_mask(img_size, padding, val=False):
-    mask = np.ones(img_size)
-    # print('mask size: ', mask.shape)
-
-    mask_size_w = random.randint(img_size[0] // 4, img_size[0] - 1)
-    mask_size_h = random.randint(img_size[1] // 4, img_size[1] - 1)
-    # mask_size = random.randint(img_size//16, img_size//4)
-
-    if (mask_size_w == img_size[0] - 1 and mask_size_h == img_size[1] - 1) or val:
-        mask = np.expand_dims(1 - mask, axis=0)
-        mask, location = mypadding(mask, x=padding[0], y=padding[1], v=1)
-        return mask
-
-    c_x = random.randint(0, img_size[0] - 1)
-    c_y = random.randint(0, img_size[1] - 1)
-
-    box_l_x = max(c_x - mask_size_w // 2, 0)
-    box_l_y = max(c_y - mask_size_h // 2, 0)
-    box_r_x = min(c_x + mask_size_w // 2, img_size[0] - 1)
-    box_r_y = min(c_y + mask_size_h // 2, img_size[1] - 1)
-
-    mask[box_l_y:box_r_y, box_l_x:box_r_x] = 0
-    mask = np.expand_dims(mask, axis=0)
-    mask, location = mypadding(mask, x=padding[0], y=padding[1], v=1)
-
-    MASK_POINT.append([c_x + location[0][0], c_y + location[0][1]])
-    MASK_AREA.append([box_l_y, box_r_y, box_l_x, box_r_x])
-    return mask
-
-
-def getmasks(img_size, channels, padding, val=False):
-    masks = []
-    for i in range(channels):
-        # print('channel: ', i)
-        masks.append(generate_mask(img_size, padding, val))
-    masks = np.concatenate(masks, axis=0)
-    return masks
-
-
-def normalize(img, type='cbct'):
+def img_normalize(img, type='cbct'):
     if type == 'cbct':
         min_value = np.min(img)
         max_value = np.max(img)
@@ -218,13 +176,13 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
 
         cbct = sitk.ReadImage(cbct_path)
         cbct = sitk.GetArrayFromImage(cbct)
-        cbct = normalize(cbct, type='cbct')
+        cbct = img_normalize(cbct, type='cbct')
         cbct_padded, img_location = mypadding(cbct, padding[0], padding[1], -1)
 
         ct = sitk.ReadImage(ct_path)
         ct = sitk.GetArrayFromImage(ct)
         ct_padded, _ = mypadding(ct, padding[0], padding[1], -1000)
-        ct_padded = normalize(ct_padded, type='ct')
+        ct_padded = img_normalize(ct_padded, type='ct')
 
         enhance_ct_norm = window_transform(ct, 1000, 350)
         enhance_ct_padded, _ = mypadding(enhance_ct_norm, padding[0], padding[1])
