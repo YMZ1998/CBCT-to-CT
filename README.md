@@ -7,7 +7,9 @@ CT scans are unavailable or difficult to acquire.
 
 [Synthrad2023](https://synthrad2023.grand-challenge.org/)
 
-Data structure is like
+[SynthRAD2023 Grand Challenge](https://github.com/SynthRAD2023)
+
+Data structure
 
 ```
 Brain_Pelvis
@@ -40,11 +42,11 @@ Brain_Pelvis
   |- ...
 ```
 
-### Result
+## Result
 
 ![image](./figure/result.png)
 
-### Environment
+## Environment
 
 ```bash
 conda env create -f env.yml
