@@ -1,13 +1,17 @@
 import datetime
+import math
+import os
+import time
 
+import torch
 import wandb
 from torch import optim
 
-from dataset import *
+from make_dataset import CreateDataset
 from model_tester import ModelTester
 from model_trainer import ModelTrainer
 from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path
-from utils import *
+from utils import get_logger, MixedPix2PixLoss_mask
 
 
 def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2,
@@ -38,8 +42,10 @@ def train():
     device = get_device()
     logger = get_logger(args.log_path)
 
-    dataset_train_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'train' in p]
-    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'test' in p][:]
+    dataset_train_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if
+                          'train' in p and args.anatomy in p]
+    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if
+                         'test' in p and args.anatomy in p][:]
 
     if args.wandb:
         assert wandb.run is None

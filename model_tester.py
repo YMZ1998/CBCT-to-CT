@@ -2,10 +2,11 @@ import sys
 
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 from tqdm import tqdm
 
-from image_metrics import *
+from image_metrics import ImageMetrics
 from post_process import post_process
 
 plt.switch_backend('agg')
@@ -170,7 +171,7 @@ class ModelTester:
 
         ds_len = len(data_loader_test)
         metrics = np.zeros((1, 3, ds_len))
-        slice_index = 300
+        slice_index = 120
 
         with torch.no_grad():
             for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):

@@ -1,9 +1,13 @@
 import datetime
+import os
+import time
 
-from dataset import *
+import torch
+
+from make_dataset import CreateDataset
 from model_tester import ModelTester
 from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path
-from utils import *
+from utils import get_logger
 
 
 def test():
@@ -12,7 +16,8 @@ def test():
     device = get_device()
     logger = get_logger(args.log_path)
 
-    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if 'test' in p][:]
+    dataset_test_path = [os.path.join(args.dataset_path, p) for p in os.listdir(args.dataset_path) if
+                         'test' in p and args.anatomy in p][:]
     stage1, stage2, resbranch = get_model(args)
 
     print('Loading checkpoint...')

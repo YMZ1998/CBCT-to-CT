@@ -38,12 +38,12 @@ def remove_and_create_dir(path):
 
 def check_dir(args):
     ensure_dir_exists('./result')
-    ensure_dir_exists('./checkpoint')
-    ensure_dir_exists('./log')
-    ensure_dir_exists('./visualization')
-    # if os.path.exists(args.visual_path):
-    #     shutil.rmtree(args.visual_path)
-    # os.makedirs(args.visual_path, exist_ok=True)
+    ensure_dir_exists(args.model_path)
+    ensure_dir_exists(args.log_path)
+    if args.resume:
+        remove_and_create_dir(args.visual_path)
+    else:
+        ensure_dir_exists(args.visual_path)
 
 
 def get_model(args):
