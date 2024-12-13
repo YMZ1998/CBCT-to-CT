@@ -108,10 +108,10 @@ Once the build is complete, you can run the generated `CBCT2CT.exe` with the req
 CBCT2CT.exe --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii.gz --result_path ./result --onnx_path ./checkpoint/cbct2ct.onnx
 ```
 
-- `--cbct_path ./test_data/cbct.nii.gz`: Path to the input CBCT image file.
-- `--mask_path ./test_data/mask.nii.gz`: Path to the input mask file.
-- `--result_path ./result`: Path where the results will be saved.
-- `--onnx_path ./checkpoint/cbct2ct.onnx`: Path to the ONNX model.
+- `--cbct_path`: Path to the input CBCT image file.
+- `--mask_path`: Path to the input mask file.
+- `--result_path`: Path where the results will be saved.
+- `--onnx_path`: Path to the ONNX model.
 
 ## Reference
 

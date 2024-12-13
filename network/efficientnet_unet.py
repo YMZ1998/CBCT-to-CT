@@ -93,7 +93,7 @@ class UpConv(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, p):
+    def __init__(self, in_channels, out_channels):
         # print("in_channels:", in_channels, "out_channels:", out_channels)
         super(DecoderBlock, self).__init__()
         middle_channels = int(in_channels // 2)
@@ -102,7 +102,7 @@ class DecoderBlock(nn.Module):
         self.up = UpConv(middle_channels, middle_channels)
         self.conv2 = Conv(middle_channels, out_channels, kernel_size=3, dilation=1)
 
-        self.drop = ops.DropBlock2d(p=p, block_size=3, inplace=True)
+        self.drop = ops.DropBlock2d(p=0.2, block_size=3, inplace=True)
 
     def forward(self, x, y):
         x = self.conv1(x)
@@ -110,7 +110,7 @@ class DecoderBlock(nn.Module):
         x = self.conv2(x)
 
         x = torch.cat([y, x], dim=1)
-        # x = self.drop(x)
+        x = self.drop(x)
         return x
 
 
@@ -126,12 +126,10 @@ class EfficientUNet(nn.Module):
         self.backbone = IntermediateLayerGetter(backbone.as_sequential(), return_layers=return_layers)
         # self.backbone = IntermediateLayerGetter(backbone.features, return_layers=return_layers)
 
-        drop = [0.2, 0.2, 0.2, 0.2]
-        # print(f"drop : {drop}")
-        self.up1 = DecoderBlock(self.stage_out_channels[4], self.stage_out_channels[3], drop[0])
-        self.up2 = DecoderBlock(self.stage_out_channels[3] * 2, self.stage_out_channels[2], drop[1])
-        self.up3 = DecoderBlock(self.stage_out_channels[2] * 2, self.stage_out_channels[1], drop[2])
-        self.up4 = DecoderBlock(self.stage_out_channels[1] * 2, self.stage_out_channels[0], drop[3])
+        self.up1 = DecoderBlock(self.stage_out_channels[4], self.stage_out_channels[3])
+        self.up2 = DecoderBlock(self.stage_out_channels[3] * 2, self.stage_out_channels[2])
+        self.up3 = DecoderBlock(self.stage_out_channels[2] * 2, self.stage_out_channels[1])
+        self.up4 = DecoderBlock(self.stage_out_channels[1] * 2, self.stage_out_channels[0])
         self.outconv = OutConv(self.stage_out_channels[0] * 2, num_classes=num_classes)
 
         self.act = act

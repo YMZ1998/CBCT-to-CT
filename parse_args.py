@@ -77,7 +77,7 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description="Train or test the CBCT to CT model")
     # 添加命令行参数
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet//efficientnet_b0')
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='efficientnet_b0', help='unet/efficientnet_b0')
     parser.add_argument("--image_size", default=320, type=int)
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
     parser.add_argument('--resume', default=False, type=bool, help="Resume from the last checkpoint")

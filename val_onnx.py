@@ -8,7 +8,7 @@ import numpy as np
 import onnxruntime
 from tqdm import tqdm
 
-from dataset import generate_2_5d_slices, img_normalize, mypadding
+from make_dataset import generate_2_5d_slices, img_normalize, img_padding
 from image_metrics import ImageMetrics, compute_metrics
 from model_tester import save_array_as_nii
 from parse_args import remove_and_create_dir
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         usage='%(prog)s [options] --cbct_path <path> --mask_path <path> --result_path <path>',
         description="CBCT generates pseudo CT.")
     parser.add_argument("--image_size", default=320, type=int)
-    parser.add_argument('--onnx_path', type=str, default='"./checkpoint/efficientnet_b0_best_model.onnx"',
+    parser.add_argument('--onnx_path', type=str, default='./checkpoint/efficientnet_b0_best_model.onnx',
                         help="Path to onnx")
     parser.add_argument('--cbct_path', type=str, required=True, help="Path to cbct file")
     parser.add_argument('--ct_path', type=str, help="Path to CT file")

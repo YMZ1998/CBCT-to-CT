@@ -3,7 +3,7 @@ import datetime
 import SimpleITK as sitk
 from torch.utils.data import TensorDataset
 
-from dataset import img_normalize, img_padding, window_transform, generate_2_5d_slices
+from make_dataset import img_normalize, img_padding, window_transform, generate_2_5d_slices
 from model_tester import ModelTester
 from parse_args import get_device, parse_args, get_model, get_latest_weight_path
 from utils import *
