@@ -17,113 +17,28 @@ def img_normalize(img, type='cbct'):
         max_value = np.max(img)
         img = (img - min_value) / (max_value - min_value)
         img = img * 2 - 1
-        # img = np.clip(img, 0, 1)
     elif type == 'ct':
-        # 后面试试直接 min max，不固定
         min_value = -1024
         max_value = 3000
         img = (img - min_value) / (max_value - min_value)
         img = np.clip(img, 0, 1)
         img = img * 2 - 1
-        # img = np.clip(img, 0, 1)
     else:
         pass
     return img
 
 
 def img_padding(img, x=288, y=288, v=0):
-    # 获取图片的高度和宽度
     h, w = img.shape[1], img.shape[2]
 
-    # 计算前后填充
     padding_y = (y - h) // 2, (y - h) - (y - h) // 2
     padding_x = (x - w) // 2, (x - w) - (x - w) // 2
 
-    # 使用 np.pad 进行填充
     padded_img = np.pad(img, ((0, 0), padding_y, padding_x), mode='constant', constant_values=v)
 
-    # 返回填充后的图片和原始图片的位置
     img_location = np.array([padding_x[0], padding_y[0], w, h])
     img_location = np.expand_dims(img_location, 0)
     return padded_img, img_location
-
-
-def cal_min_max(path):
-    paths = os.listdir(path)
-
-    size_heights = []
-    size_widths = []
-
-    cbct_min_values = []
-    cbct_max_values = []
-
-    ct_min_values = []
-    ct_max_values = []
-
-    for p in paths:
-        if p == '.DS_Store':
-            continue
-
-        path_temp = os.path.join(path, p)
-        path_cbct = os.path.join(path_temp, 'cbct.nii.gz')
-        path_ct = os.path.join(path_temp, 'ct.nii.gz')
-
-        cbct = sitk.ReadImage(path_cbct)
-        cbct = sitk.GetArrayFromImage(cbct)
-
-        # print(cbct.shape)
-        size_heights.append(cbct.shape[1])
-        size_widths.append(cbct.shape[2])
-        cbct_min_values.append(cbct.min())
-        cbct_max_values.append(cbct.max())
-
-        ct = sitk.ReadImage(path_ct)
-        ct = sitk.GetArrayFromImage(ct)
-        ct_min_values.append(ct.min())
-        ct_max_values.append(ct.max())
-
-    print('size')
-    print('--height: {}-{}'.format(np.min(size_heights), np.max(size_heights)))
-    print('--width: {}-{}'.format(np.min(size_widths), np.max(size_widths)))
-
-    print('cbct')
-    print('--value: {}-{}'.format(np.min(cbct_min_values), np.max(cbct_max_values)))
-
-    print('ct')
-    print('--value: {}-{}'.format(np.min(ct_min_values), np.max(ct_max_values)))
-
-
-def cal_min_max_val(path):
-    paths = os.listdir(path)
-
-    size_heights = []
-    size_widths = []
-
-    cbct_min_values = []
-    cbct_max_values = []
-
-    for p in paths:
-        if p == '.DS_Store':
-            continue
-
-        path_temp = os.path.join(path, p)
-        path_cbct = os.path.join(path_temp, 'cbct.nii.gz')
-
-        cbct = sitk.ReadImage(path_cbct)
-        cbct = sitk.GetArrayFromImage(cbct)
-
-        size_heights.append(cbct.shape[1])
-        size_widths.append(cbct.shape[2])
-        cbct_min_values.append(cbct.min())
-        cbct_max_values.append(cbct.max())
-
-    print('size')
-    print('--height: {}-{}'.format(np.min(size_heights), np.max(size_heights)))
-    print('--width: {}-{}'.format(np.min(size_widths), np.max(size_widths)))
-
-    print('cbct')
-    print('--value: {}-{}'.format(np.min(cbct_min_values), np.max(cbct_max_values)))
-
 
 def window_transform(ct_array, window_width, window_center):
     minWindow = window_center - 0.5 * window_width
@@ -179,20 +94,20 @@ def generate_train_test_dataset(path, padding, p='brain', t='train', interval=3,
         cbct = sitk.ReadImage(cbct_path)
         cbct = sitk.GetArrayFromImage(cbct)
         cbct = img_normalize(cbct, type='cbct')
-        cbct_padded, img_location = mypadding(cbct, padding[0], padding[1], -1)
+        cbct_padded, img_location = img_padding(cbct, padding[0], padding[1], -1)
 
         ct = sitk.ReadImage(ct_path)
         ct = sitk.GetArrayFromImage(ct)
-        ct_padded, _ = mypadding(ct, padding[0], padding[1], -1000)
+        ct_padded, _ = img_padding(ct, padding[0], padding[1], -1000)
         ct_padded = img_normalize(ct_padded, type='ct')
 
         enhance_ct_norm = window_transform(ct, 1000, 350)
-        enhance_ct_padded, _ = mypadding(enhance_ct_norm, padding[0], padding[1])
+        enhance_ct_padded, _ = img_padding(enhance_ct_norm, padding[0], padding[1])
         enhance_ct_padded = enhance_ct_padded * 2 - 1
 
         mask = sitk.ReadImage(mask_path)
         mask = sitk.GetArrayFromImage(mask)
-        mask_padded, _ = mypadding(mask, padding[0], padding[1])
+        mask_padded, _ = img_padding(mask, padding[0], padding[1])
 
         length = len(cbct_padded)
 
@@ -254,12 +169,9 @@ def load_npz_data(dataset_path):
 def CreateDataset(dataset_paths):
     all_datasets = []
 
-    # 加载每个数据集
     for dataset_path in dataset_paths:
         print("dataset path:", dataset_path)
         img, location = load_npz_data(dataset_path)
-        # print("img shape:", img.shape)
-        # print("location shape:", location.shape)
 
         dataset = TensorDataset(torch.from_numpy(img), torch.from_numpy(location))
         all_datasets.append(dataset)
@@ -301,12 +213,6 @@ def generate_dataset(anatomy, shape):
                                 save_path='./dataset')
     generate_train_test_dataset(f'./data/{anatomy}/test', padding=shape, p=anatomy, t='test', interval=1,
                                 save_path='./dataset')
-
-    # generate_train_test_dataset('./data/train/pelvis', padding=[592, 416], p='pelvis', t='train', interval=2,
-    #                             save_path='./dataset')
-    # generate_train_test_dataset('./data/test/pelvis', padding=[592, 416], p='pelvis', t='test', interval=1,
-    #                             save_path='./dataset')
-
 
 if __name__ == '__main__':
     args = parse_args()

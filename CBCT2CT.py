@@ -76,8 +76,8 @@ def img_padding(img, x=288, y=288, v=0):
 def load_data(cbct_path, mask_path, shape):
     cbct = sitk.ReadImage(cbct_path)
     cbct = sitk.GetArrayFromImage(cbct)
-    print(cbct.shape)
-    cbct = img_normalize(cbct, type='cbct')
+    print("cbct shape: ", cbct.shape)
+    cbct = img_normalize(cbct)
     cbct_padded, img_location = img_padding(cbct, shape[0], shape[1], -1)
 
     mask = sitk.ReadImage(mask_path)
@@ -145,18 +145,6 @@ def remove_and_create_dir(path):
 
 
 if __name__ == '__main__':
-    # data_path = './data/brain/test'
-    # case_path = [os.path.join(data_path, p) for p in os.listdir(data_path)][0]
-    # print(case_path)
-    # cbct_path = os.path.join(case_path, 'cbct.nii.gz')
-    # mask_path = os.path.join(case_path, 'mask.nii.gz')
-    # result_path = "./result"
-    # onnx_file_name = "./checkpoint/{}_best_model.onnx".format('efficientnet_b0')
-    # # os.makedirs('./dist/checkpoint')
-    # # shutil.copy(onnx_file_name, './dist/checkpoint/cbct2ct.onnx')
-    # remove_and_create_dir(result_path)
-    # print(f"python CBCT2CT.py --cbct_path {cbct_path} --mask_path {mask_path} --result_path {result_path}")
-    # print(f"CBCT2CT.exe --cbct_path {cbct_path} --mask_path {mask_path} --result_path {result_path}")
     # python CBCT2CT.py --cbct_path ./data/brain/test\2BA001\cbct.nii.gz --mask_path ./data/brain/test\2BA001\mask.nii.gz --result_path ./result
     # CBCT2CT.exe --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii.gz --result_path ./result --onnx_path ./checkpoint/cbct2ct.onnx
     parser = argparse.ArgumentParser(

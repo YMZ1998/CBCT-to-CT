@@ -21,18 +21,18 @@ def load_data(cbct_path, ct_path, mask_path, shape):
     cbct = sitk.GetArrayFromImage(cbct)
     print(cbct.shape)
     cbct = img_normalize(cbct, type='cbct')
-    cbct_padded, img_location = mypadding(cbct, shape[0], shape[1], -1)
+    cbct_padded, img_location = img_padding(cbct, shape[0], shape[1], -1)
     if args.ct_path is not None:
         ct = sitk.ReadImage(ct_path)
         ct = sitk.GetArrayFromImage(ct)
-        ct_padded, _ = mypadding(ct, shape[0], shape[1], -1000)
+        ct_padded, _ = img_padding(ct, shape[0], shape[1], -1000)
         ct_padded = img_normalize(ct_padded, type='ct')
     else:
         ct_padded = np.zeros_like(cbct_padded)
 
     mask = sitk.ReadImage(mask_path)
     mask = sitk.GetArrayFromImage(mask)
-    mask_padded, _ = mypadding(mask, shape[0], shape[1])
+    mask_padded, _ = img_padding(mask, shape[0], shape[1])
     return cbct_padded, img_location, ct_padded, mask_padded
 
 
