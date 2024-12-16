@@ -123,7 +123,7 @@ class ModelTester:
             plt.title("Final Output")
         # plt.show()
         plt.subplots_adjust(top=0.85)
-        plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=300)
+        plt.savefig(f"visualization/epoch{epoch}_iteration{iteration}.png", dpi=100)
         plt.clf()
         plt.close(fig)
 

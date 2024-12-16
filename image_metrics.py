@@ -176,8 +176,12 @@ def compute_metrics(origin_ct_path, predict_path, mask_path):
     print(metrics.score_patient(gt_array, pred_array, mask_array))
 
 
-if __name__ == '__main__':
+def compute_val_metrics():
     origin_ct_path = "./result/origin_ct.nii.gz"
     predict_path = "./result/predict.nii.gz"
     mask_path = "./result/origin_mask.nii.gz"
     compute_metrics(origin_ct_path, predict_path, mask_path)
+
+
+if __name__ == '__main__':
+    compute_val_metrics()

@@ -186,7 +186,7 @@ def check_dataset(anatomy):
     # origin_cbct, origin_ct, enhance_ct, mask = np.split(images, [5, 1, 1, 1], dim=1)
     origin_cbct, origin_ct, enhance_ct, mask = np.split(images[100], [5, 6, 7], axis=0)
 
-    fig = plt.figure(figsize=(9, 3), dpi=100, tight_layout=True)
+    plt.figure(figsize=(9, 3), dpi=100, tight_layout=True)
     # 显示 CBCT 图像
     plt.subplot(1, 3, 1)
     plt.axis("off")

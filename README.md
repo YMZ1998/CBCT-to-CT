@@ -17,22 +17,22 @@ Brain_Pelvis
 |-brain
   |-1BA001
     |-ct.nii.gz
-    |-mr.nii.gz
+    |-cbct.nii.gz
     |-mask.nii.gz
   |- ...
   |-1BA005
     |-ct.nii.gz
-    |-mr.nii.gz
+    |-cbct.nii.gz
     |-mask.nii.gz
 |-pelvis
   |-1PA001
     |-ct.nii.gz
-    |-mr.nii.gz
+    |-cbct.nii.gz
     |-mask.nii.gz
   |- ...
   |-1PA004
     |-ct.nii.gz
-    |-mr.nii.gz
+    |-cbct.nii.gz
     |-mask.nii.gz
 
 -test
@@ -91,7 +91,7 @@ conda remove --name cbct2ct --all
 ### 4. Use PyInstaller to Package Python Script
 
 ```bash
-pyinstaller --name CBCT2CT --onefile CBCT2CT.py
+pyinstaller --name CBCT2CT --onefile --icon=cbct2ct.ico CBCT2CT.py
 ```
 
 ### 5. Clean the Build Cache and Temporary Files

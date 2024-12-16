@@ -37,4 +37,4 @@ if __name__ == '__main__':
     print(f"Test files: {len(test)}")
 
     copy_files(train, data_path, train_path, 'train')
-copy_files(test, data_path, test_path, 'test')
+    copy_files(test, data_path, test_path, 'test')

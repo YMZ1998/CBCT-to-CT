@@ -41,9 +41,9 @@ def check_dir(args):
     ensure_dir_exists(args.model_path)
     ensure_dir_exists(args.log_path)
     if args.resume:
-        remove_and_create_dir(args.visual_path)
-    else:
         ensure_dir_exists(args.visual_path)
+    else:
+        remove_and_create_dir(args.visual_path)
 
 
 def get_model(args):

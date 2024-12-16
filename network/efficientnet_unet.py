@@ -20,7 +20,6 @@ class IntermediateLayerGetter(nn.ModuleDict):
         orig_return_layers = return_layers
         return_layers = {str(k): str(v) for k, v in return_layers.items()}
 
-        # 重新构建backbone，将没有使用到的模块全部删掉
         layers = OrderedDict()
         for name, module in model.named_children():
             layers[name] = module
@@ -42,8 +41,8 @@ class IntermediateLayerGetter(nn.ModuleDict):
         return out
 
 
-activation_layer = nn.ReLU(inplace=True)
-# activation_layer = nn.LeakyReLU(0.1, inplace=True)
+# activation_layer = nn.ReLU(inplace=True)
+activation_layer = nn.LeakyReLU(0.1, inplace=True)
 
 class OutConv(nn.Sequential):
     def __init__(self, in_channels, num_classes):
@@ -102,7 +101,7 @@ class DecoderBlock(nn.Module):
         self.up = UpConv(middle_channels, middle_channels)
         self.conv2 = Conv(middle_channels, out_channels, kernel_size=3, dilation=1)
 
-        self.drop = ops.DropBlock2d(p=0.2, block_size=3, inplace=True)
+        # self.drop = ops.DropBlock2d(p=0.2, block_size=3, inplace=True)
 
     def forward(self, x, y):
         x = self.conv1(x)
@@ -110,7 +109,7 @@ class DecoderBlock(nn.Module):
         x = self.conv2(x)
 
         x = torch.cat([y, x], dim=1)
-        x = self.drop(x)
+        # x = self.drop(x)
         return x
 
 

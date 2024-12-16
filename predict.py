@@ -88,4 +88,7 @@ def predict():
 
 
 if __name__ == '__main__':
+    from image_metrics import compute_val_metrics
+
     predict()
+    compute_val_metrics()
