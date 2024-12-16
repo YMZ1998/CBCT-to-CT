@@ -42,6 +42,30 @@ Brain_Pelvis
   |- ...
 ```
 
+## Usage
+
+### 1. Data Split
+
+```bash
+python data_split.py
+```
+
+### 2. Make Dataset
+
+```bash
+python make_dataset.py
+```
+
+### 3. Train, Test & Predict
+
+```bash
+python train.py
+python test.py
+python predict.py
+```
+
+## [Metric](https://github.com/SynthRAD2023/metrics)
+
 ## Result
 
 ![image](https://github.com/YMZ1998/CBCT-to-CT/blob/main/figure/result.png)
