@@ -35,7 +35,7 @@ def to_numpy(tensor):
 
 def convert_onnx(args):
     """Convert PyTorch model to ONNX format."""
-    from parse_args import get_model, get_best_weight_path
+    from parse_args import get_model, get_latest_weight_path
 
     # Prepare device and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -46,7 +46,7 @@ def convert_onnx(args):
     model = Model(stage1, stage2, resbranch).to(device)
 
     # Load weights
-    weights_path = get_best_weight_path(args)
+    weights_path = get_latest_weight_path(args)
     model.load_model_weights(weights_path)
 
     # Set model to evaluation mode
@@ -61,7 +61,7 @@ def convert_onnx(args):
     torch_out = model(x, mask)
 
     # Define the output ONNX file name
-    onnx_file_name = os.path.join("checkpoint", f"{args.arch}_best_model.onnx")
+    onnx_file_name = os.path.join("checkpoint", f"{args.anatomy}.onnx")
 
     # Export model to ONNX
     torch.onnx.export(model, (x, mask), onnx_file_name,

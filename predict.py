@@ -34,7 +34,7 @@ def load_data(cbct_path, ct_path, mask_path, shape):
 def predict():
     args = parse_args()
     shape = [args.image_size, args.image_size]
-    data_path = './data/brain/test'
+    data_path = f'./data/{args.anatomy}/test'
     case_path = [os.path.join(data_path, p) for p in os.listdir(data_path)][0]
     print(case_path)
     cbct_path = os.path.join(case_path, 'cbct.nii.gz')

@@ -66,6 +66,8 @@ python predict.py
 
 ## [Metric](https://github.com/SynthRAD2023/metrics)
 
+## [Preprocess](https://github.com/SynthRAD2023/preprocessing)
+
 ## Result
 
 ![image](https://github.com/YMZ1998/CBCT-to-CT/blob/main/figure/result.png)
@@ -105,26 +107,19 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple onnxruntime
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple tqdm
 ```
 
-### 3. Deactivate and Remove Conda Environment
-
-```bash
-conda deactivate
-conda remove --name cbct2ct --all
-```
-
-### 4. Use PyInstaller to Package Python Script
+### 3. Use PyInstaller to Package Python Script
 
 ```bash
 pyinstaller --name CBCT2CT --onefile --icon=cbct2ct.ico CBCT2CT.py
 ```
 
-### 5. Clean the Build Cache and Temporary Files
+### 4. Clean the Build Cache and Temporary Files
 
 ```bash
 pyinstaller --clean CBCT2CT.spec
 ```
 
-### 6. Run the Executable
+### 5. Run the Executable
 
 Once the build is complete, you can run the generated `CBCT2CT.exe` with the required parameters:
 
@@ -136,6 +131,13 @@ CBCT2CT.exe --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii
 - `--mask_path`: Path to the input mask file.
 - `--result_path`: Path where the results will be saved.
 - `--onnx_path`: Path to the ONNX model.
+
+### 6. Deactivate and Remove Conda Environment
+
+```bash
+conda deactivate
+conda remove --name cbct2ct --all
+```
 
 ## Reference
 

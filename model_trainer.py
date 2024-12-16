@@ -142,9 +142,9 @@ class ModelTrainer:
         # print(f'train epoch: {epoch}, loss: {loss_gbs_v}')
 
         self.save_epoch_model(epoch, loss_gbs_v)
-        if current_stage == 3 and loss_gbs_v < best_loss:
-            best_loss = loss_gbs_v
-            self.save_model(epoch, loss_gbs_v, weight_path=self.best_weight_path)
+        # if current_stage == 3 and loss_gbs_v < best_loss:
+        #     best_loss = loss_gbs_v
+        #     self.save_model(epoch, loss_gbs_v, weight_path=self.best_weight_path)
 
         # 记录日志
         log_str = f" train epoch: {epoch} loss_gb: {loss_gbs_v}"
