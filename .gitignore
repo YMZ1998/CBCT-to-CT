@@ -5,13 +5,13 @@ __pycache__/
 
 # C extensions
 *.so
-
+*.exe
 *.trt
 *.onnx
 # Distribution / packaging
 .Python
 .idea/
-/checkpoint/
+checkpoint/
 data/
 dataset/
 log/
