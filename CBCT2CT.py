@@ -213,9 +213,10 @@ def remove_and_create_dir(path):
 
 
 if __name__ == '__main__':
-    # python CBCT2CT.py --cbct_path ./data/brain/test\2BA001\cbct.nii.gz --mask_path ./data/brain/test\2BA001\mask.nii.gz --result_path ./result
-    # python CBCT2CT.py --cbct_path ./data/pelvis/test\2PA001\cbct.nii.gz --mask_path ./data/pelvis/test\2PA001\mask.nii.gz --result_path ./result
+    # python CBCT2CT.py --cbct_path ./data/brain/test\2BA001\cbct.nii.gz --mask_path ./data/brain/test\2BA001\mask.nii.gz --result_path ./result --anatomy brain
+    # python CBCT2CT.py --cbct_path ./data/pelvis/test\2PA001\cbct.nii.gz --mask_path ./data/pelvis/test\2PA001\mask.nii.gz --result_path ./result --anatomy pelvis
     # CBCT2CT.exe --cbct_path ./test_data/brain/cbct.nii.gz --mask_path ./test_data/brain/mask.nii.gz --result_path ./result --anatomy brain
+    # CBCT2CT.exe --cbct_path ./test_data/pelvis/cbct.nii.gz --mask_path ./test_data/pelvis/mask.nii.gz --result_path ./result --anatomy pelvis
     parser = argparse.ArgumentParser(
         prog='CBCT2CT.py',
         usage='%(prog)s [options] --cbct_path <path> --mask_path <path> --result_path <path>',

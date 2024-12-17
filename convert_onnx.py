@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import numpy as np
 import onnx
@@ -90,6 +91,7 @@ def convert_onnx(args):
 
     # Save the ONNX model
     print(f"Model saved as ONNX to {onnx_file_name}.")
+    shutil.copy(onnx_file_name, f'./dist/checkpoint/{args.anatomy}.onnx')
 
 
 if __name__ == '__main__':
