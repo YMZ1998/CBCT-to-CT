@@ -124,13 +124,17 @@ pyinstaller --clean CBCT2CT.spec
 Once the build is complete, you can run the generated `CBCT2CT.exe` with the required parameters:
 
 ```bash
-CBCT2CT.exe --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii.gz --result_path ./result --onnx_path ./checkpoint/cbct2ct.onnx
+CBCT2CT.exe --cbct_path ./test_data/brain/cbct.nii.gz --mask_path ./test_data/brain/mask.nii.gz --result_path ./result --anatomy brain
+```
+
+```bash
+CBCT2CT.exe --cbct_path ./test_data/pelvis/cbct.nii.gz --mask_path ./test_data/pelvis/mask.nii.gz --result_path ./result --anatomy pelvis
 ```
 
 - `--cbct_path`: Path to the input CBCT image file.
 - `--mask_path`: Path to the input mask file.
 - `--result_path`: Path where the results will be saved.
-- `--onnx_path`: Path to the ONNX model.
+- `--anatomy`: Choose a model based on anatomical region.
 
 ### 6. Deactivate and Remove Conda Environment
 

@@ -196,10 +196,17 @@ def val_onnx(args):
 
     out_results = np.concatenate(out_results, axis=0)
 
-    predict_path = os.path.join(args.result_path, "predict.nii.gz")
-    mask_path = os.path.join(args.result_path, "origin_mask.nii.gz")
+    if 'mhd' in args.cbct_path:
+        predict_path = os.path.join(args.result_path, "predict.mhd")
+        mask_path = os.path.join(args.result_path, "origin_mask.mhd")
+        shutil.copy(args.mask_path, mask_path)
+        shutil.copy(args.mask_path.replace("mhd", "raw"), mask_path.replace("mhd", "raw"))
+    else:
+        predict_path = os.path.join(args.result_path, "predict.nii.gz")
+        mask_path = os.path.join(args.result_path, "origin_mask.nii.gz")
+        shutil.copy(args.mask_path, mask_path)
+
     save_array_as_nii(out_results, predict_path, origin_cbct)
-    shutil.copy(args.mask_path, mask_path)
     if os.path.exists(args.mask_path.replace('mask', 'ct')):
         shutil.copy(args.mask_path.replace('mask', 'ct'), mask_path.replace('mask', 'ct'))
     total_time = time.time() - start_time
