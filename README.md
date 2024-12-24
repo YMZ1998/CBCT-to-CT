@@ -70,7 +70,7 @@ python predict.py
 
 ## Result
 
-![image](https://github.com/YMZ1998/CBCT-to-CT/blob/main/figure/result.png)
+![image](/figure/result.png)
 
 ## Environment
 
@@ -146,3 +146,5 @@ conda remove --name cbct2ct --all
 ## Reference
 
 [A Simple Two-stage Residual Network for MR-CT Translation](https://github.com/ZhangZhiHao233/MR-to-CT)
+
+[CBCTLiTS](https://www.kaggle.com/datasets/maximiliantschuchnig/cbct-liver-and-liver-tumor-segmentation-test-data)

@@ -37,6 +37,7 @@ def post_process(out, location, mask, original_size, min_v=-1024, max_v=3000):
 
 def save_array_as_nii(array, file_path, reference=None):
     sitk_image = sitk.GetImageFromArray(array)
+    sitk_image = sitk.Cast(sitk_image, sitk.sitkInt16)
     if reference is not None:
         sitk_image.CopyInformation(reference)
     sitk.WriteImage(sitk_image, file_path)
@@ -78,7 +79,6 @@ def load_data(cbct_path, mask_path, shape):
     # 读取CBCT图像
     origin_cbct = sitk.ReadImage(cbct_path)
     cbct_array = sitk.GetArrayFromImage(origin_cbct)
-
     original_size = origin_cbct.GetSize()
     print("Original size: ", original_size)
     original_spacing = origin_cbct.GetSpacing()
@@ -86,12 +86,13 @@ def load_data(cbct_path, mask_path, shape):
 
     origin_mask = sitk.ReadImage(mask_path)
     mask_array = sitk.GetArrayFromImage(origin_mask)
+    mask_array[mask_array > 0] = 1
 
     # 如果CBCT尺寸大于目标尺寸，进行重采样
     if cbct_array.shape[1] > shape[0] or cbct_array.shape[2] > shape[1]:
         print("Resampling CBCT...")
         max_shape = max(cbct_array.shape[1], cbct_array.shape[2])
-        print("Max shape: ", max_shape)
+        # print("Max shape: ", max_shape)
         cbct_array, img_location = img_padding(cbct_array, max_shape, max_shape, -1)
         padding_cbct = sitk.GetImageFromArray(cbct_array)
         padding_cbct.SetSpacing(original_spacing)
@@ -127,7 +128,7 @@ def load_data(cbct_path, mask_path, shape):
         mask_resampled = resampler.Execute(padding_mask)
         mask_padded = sitk.GetArrayFromImage(mask_resampled)
         # sitk.WriteImage(mask_resampled, os.path.join(args.result_path, "resample_mask.nii.gz"))
-        print("Resampled mask shape: ", mask_padded.shape)
+        # print("Resampled mask shape: ", mask_padded.shape)
     else:
         cbct_array = img_normalize(cbct_array)
         cbct_padded, img_location = img_padding(cbct_array, shape[0], shape[1], -1)
@@ -155,7 +156,7 @@ def val_onnx(args):
         args.image_size = 320
     else:
         args.image_size = 480
-    args.onnx_path = f'./checkpoint/{args.anatomy}.onnx'
+    args.onnx_path = os.path.join(args.onnx_path, f'{args.anatomy}.onnx')
     shape = [args.image_size, args.image_size]
 
     os.makedirs(args.result_path, exist_ok=True)
@@ -172,7 +173,7 @@ def val_onnx(args):
         cbct_vecs.append(cbct_2_5d)
         location_vecs.append(img_location)
         mask_vecs.append(mask_padded[index])
-    cbct_batch = np.array(cbct_vecs[:])
+    cbct_batch = np.array(cbct_vecs[:]).astype(np.float32)
     mask_batch = np.expand_dims(np.array(mask_vecs[:]), axis=1).astype(np.float32)
     locations_batch = np.concatenate(location_vecs[:], axis=0).astype(np.float32)
 
@@ -198,17 +199,17 @@ def val_onnx(args):
 
     if 'mhd' in args.cbct_path:
         predict_path = os.path.join(args.result_path, "predict.mhd")
-        mask_path = os.path.join(args.result_path, "origin_mask.mhd")
-        shutil.copy(args.mask_path, mask_path)
-        shutil.copy(args.mask_path.replace("mhd", "raw"), mask_path.replace("mhd", "raw"))
+        # mask_path = os.path.join(args.result_path, "origin_mask.mhd")
+        # shutil.copy(args.mask_path, mask_path)
+        # shutil.copy(args.mask_path.replace("mhd", "raw"), mask_path.replace("mhd", "raw"))
     else:
         predict_path = os.path.join(args.result_path, "predict.nii.gz")
-        mask_path = os.path.join(args.result_path, "origin_mask.nii.gz")
-        shutil.copy(args.mask_path, mask_path)
+        # mask_path = os.path.join(args.result_path, "origin_mask.nii.gz")
+        # shutil.copy(args.mask_path, mask_path)
 
     save_array_as_nii(out_results, predict_path, origin_cbct)
-    if os.path.exists(args.mask_path.replace('mask', 'ct')):
-        shutil.copy(args.mask_path.replace('mask', 'ct'), mask_path.replace('mask', 'ct'))
+    # if os.path.exists(args.mask_path.replace('mask', 'ct')):
+    #     shutil.copy(args.mask_path.replace('mask', 'ct'), mask_path.replace('mask', 'ct'))
     total_time = time.time() - start_time
     print("time {}s".format(total_time))
 
@@ -222,6 +223,8 @@ def remove_and_create_dir(path):
 if __name__ == '__main__':
     # python CBCT2CT.py --cbct_path ./data/brain/test\2BA001\cbct.nii.gz --mask_path ./data/brain/test\2BA001\mask.nii.gz --result_path ./result --anatomy brain
     # python CBCT2CT.py --cbct_path ./data/pelvis/test\2PA001\cbct.nii.gz --mask_path ./data/pelvis/test\2PA001\mask.nii.gz --result_path ./result --anatomy pelvis
+    # python CBCT2CT.py --cbct_path ./dist/test_data/cbct.nii.gz --mask_path ./dist/test_data/mask.nii.gz --result_path ./result --anatomy brain
+    # CBCT2CT.exe  --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii.gz --result_path ./result --anatomy brain
     # CBCT2CT.exe --cbct_path ./test_data/brain/cbct.nii.gz --mask_path ./test_data/brain/mask.nii.gz --result_path ./result --anatomy brain
     # CBCT2CT.exe --cbct_path ./test_data/pelvis/cbct.nii.gz --mask_path ./test_data/pelvis/mask.nii.gz --result_path ./result --anatomy pelvis
     parser = argparse.ArgumentParser(
@@ -229,8 +232,8 @@ if __name__ == '__main__':
         usage='%(prog)s [options] --cbct_path <path> --mask_path <path> --result_path <path>',
         description="CBCT generates pseudo CT.")
     # parser.add_argument("--image_size", default=320, type=int)
-    # parser.add_argument('--onnx_path', type=str, default='./checkpoint/brain.onnx',
-    #                     help="Path to onnx")
+    parser.add_argument('--onnx_path', type=str, default='./checkpoint',
+                        help="Path to onnx")
     parser.add_argument('--anatomy', choices=['brain', 'pelvis'], default='brain', help="The anatomy type")
     parser.add_argument('--cbct_path', type=str, required=True, help="Path to cbct file")
     parser.add_argument('--mask_path', type=str, required=True, help="Path to mask file")

@@ -42,7 +42,7 @@ class ModelTester:
         self.save_all = save_all
 
     def load_model_weights(self, weight_path):
-        """Load model weights from checkpoint."""
+        print(f"Loading checkpoint from {weight_path}")
         checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
         self.stage1.load_state_dict(checkpoint['model_stage1'])
         self.stage2.load_state_dict(checkpoint['model_stage2'])

@@ -29,6 +29,26 @@ class ModelTrainer:
         self.best_weight_path = get_best_weight_path(args, verbose=False)
         self.latest_weight_path = get_latest_weight_path(args, verbose=False)
 
+    def load_model_weights(self, weight_path):
+        checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
+
+        self.stage1.load_state_dict(checkpoint['model_stage1'])
+        self.stage2.load_state_dict(checkpoint['model_stage2'])
+        self.resbranch.load_state_dict(checkpoint['model_resbranch'])
+
+        self.optimizer_stage1.load_state_dict(checkpoint['optimizer_stage1'])
+        self.optimizer_stage2.load_state_dict(checkpoint['optimizer_stage2'])
+        self.optimizer_resbranch.load_state_dict(checkpoint['optimizer_resbranch'])
+
+        self.lr_scheduler_stage1.load_state_dict(checkpoint['lr_scheduler_stage1'])
+        self.lr_scheduler_stage2.load_state_dict(checkpoint['lr_scheduler_stage2'])
+        self.lr_scheduler_resbranch.load_state_dict(checkpoint['lr_scheduler_resbranch'])
+
+        last_epoch = checkpoint['epoch']
+        last_loss = checkpoint['loss']
+        print(f"Loaded checkpoint from epoch {last_epoch} with loss: {last_loss}")
+        return last_epoch
+
     def compute_loss(self, pred, target, mask, alpha=0.95):
         """计算加权的损失值"""
         return alpha * self.criterion(pred, target, mask) + (1 - alpha) * self.criterion(pred, target, 1 - mask)
@@ -61,7 +81,7 @@ class ModelTrainer:
         #     }, os.path.join(self.model_path, f'model_{epoch}.pth'))
         self.save_model(epoch, loss, weight_path=self.latest_weight_path)
 
-    def train_one_epoch(self, data_loader_train, epoch, interval=1):
+    def train_one_epoch(self, data_loader_train, epoch):
         loss_gbs = []
         self.stage1.train()
         self.stage2.train()

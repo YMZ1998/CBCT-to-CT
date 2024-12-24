@@ -14,28 +14,6 @@ from parse_args import get_device, parse_args, check_dir, get_model, get_latest_
 from utils import get_logger, MixedPix2PixLoss_mask
 
 
-def load_checkpoint(checkpoint_path, stage1, stage2, resbranch, optimizer_stage1, optimizer_stage2,
-                    optimizer_resbranch, lr_scheduler_stage1, lr_scheduler_stage2, lr_scheduler_resbranch):
-    checkpoint = torch.load(checkpoint_path, weights_only=False, map_location='cpu')
-
-    stage1.load_state_dict(checkpoint['model_stage1'])
-    stage2.load_state_dict(checkpoint['model_stage2'])
-    resbranch.load_state_dict(checkpoint['model_resbranch'])
-
-    optimizer_stage1.load_state_dict(checkpoint['optimizer_stage1'])
-    optimizer_stage2.load_state_dict(checkpoint['optimizer_stage2'])
-    optimizer_resbranch.load_state_dict(checkpoint['optimizer_resbranch'])
-
-    lr_scheduler_stage1.load_state_dict(checkpoint['lr_scheduler_stage1'])
-    lr_scheduler_stage2.load_state_dict(checkpoint['lr_scheduler_stage2'])
-    lr_scheduler_resbranch.load_state_dict(checkpoint['lr_scheduler_resbranch'])
-
-    last_epoch = checkpoint['epoch']
-    last_loss = checkpoint['loss']
-    print(f"Loaded checkpoint from epoch {last_epoch} with loss: {last_loss}")
-    return last_epoch
-
-
 def train():
     args = parse_args()
     check_dir(args)
@@ -59,21 +37,11 @@ def train():
     optimizer_stage2 = optim.AdamW(stage2.parameters(), lr=args.learning_rate, weight_decay=0.01)
     optimizer_resbranch = optim.AdamW(resbranch.parameters(), lr=args.learning_rate, weight_decay=0.01)
 
-    lf = lambda x: ((1 + math.cos(x * math.pi / args.epoch_total)) / 2) * (
-        1 - args.learning_rate) + args.learning_rate  # cosine
+    lrf = 0.01
+    lf = lambda x: ((1 + math.cos(x * math.pi / args.epoch_total)) / 2) * (1 - lrf) + lrf  # cosine
     lr_scheduler_stage1 = torch.optim.lr_scheduler.LambdaLR(optimizer_stage1, lr_lambda=lf)
     lr_scheduler_stage2 = torch.optim.lr_scheduler.LambdaLR(optimizer_stage2, lr_lambda=lf)
     lr_scheduler_resbranch = torch.optim.lr_scheduler.LambdaLR(optimizer_resbranch, lr_lambda=lf)
-
-    last_epoch = 0
-    weight_path = get_latest_weight_path(args)
-    if args.resume:
-        if os.path.exists(weight_path):
-            last_epoch = load_checkpoint(weight_path, stage1, stage2, resbranch, optimizer_stage1,
-                                         optimizer_stage2, optimizer_resbranch, lr_scheduler_stage1,
-                                         lr_scheduler_stage2, lr_scheduler_resbranch)
-        else:
-            print('No checkpoint found, starting from scratch.')
 
     print('Training...')
     dataset_train = CreateDataset(dataset_train_path)
@@ -101,12 +69,20 @@ def train():
         logger=logger,
     )
 
+    last_epoch = 0
+    weight_path = get_latest_weight_path(args)
+    if args.resume:
+        if os.path.exists(weight_path):
+            last_epoch = model_trainer.load_model_weights(weight_path)
+        else:
+            print('No checkpoint found, starting from scratch.')
+
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,
                                epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger)
 
     start_time = time.time()
     for epoch in range(last_epoch + 1, args.epoch_total + 1):
-        train_loss = model_trainer.train_one_epoch(data_loader_train, epoch, interval=2)
+        train_loss = model_trainer.train_one_epoch(data_loader_train, epoch)
         if epoch % 3 == 0:
             test_metrics = model_tester.test(data_loader_test, epoch)
         if args.wandb:

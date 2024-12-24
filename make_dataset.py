@@ -15,7 +15,7 @@ def img_normalize(img, type='cbct'):
     if type == 'cbct':
         min_value = np.min(img)
         max_value = np.max(img)
-        img = (img - min_value) / (max_value - min_value)
+        img = (img - min_value) / (max_value - min_value + 1e-8)
         img = img * 2 - 1
     elif type == 'ct':
         min_value = -1024
@@ -39,6 +39,7 @@ def img_padding(img, x=288, y=288, v=0):
     img_location = np.array([padding_x[0], padding_y[0], w, h])
     img_location = np.expand_dims(img_location, 0)
     return padded_img, img_location
+
 
 def window_transform(ct_array, window_width, window_center):
     minWindow = window_center - 0.5 * window_width
@@ -213,6 +214,7 @@ def generate_dataset(anatomy, shape):
                                 save_path='./dataset')
     generate_train_test_dataset(f'./data/{anatomy}/test', padding=shape, p=anatomy, t='test', interval=1,
                                 save_path='./dataset')
+
 
 if __name__ == '__main__':
     args = parse_args()

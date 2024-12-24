@@ -20,13 +20,13 @@ def test():
                          'test' in p and args.anatomy in p][:]
     stage1, stage2, resbranch = get_model(args)
 
-    print('Loading checkpoint...')
+    # print('Loading checkpoint...')
     # weight_path = get_best_weight_path(args)
-    weight_path = get_latest_weight_path(args)
-    checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
-    stage1.load_state_dict(checkpoint['model_stage1'])
-    stage2.load_state_dict(checkpoint['model_stage2'])
-    resbranch.load_state_dict(checkpoint['model_resbranch'])
+    # weight_path = get_latest_weight_path(args)
+    # checkpoint = torch.load(weight_path, weights_only=False, map_location='cpu')
+    # stage1.load_state_dict(checkpoint['model_stage1'])
+    # stage2.load_state_dict(checkpoint['model_stage2'])
+    # resbranch.load_state_dict(checkpoint['model_resbranch'])
 
     print('Testing...')
     dataset_test = CreateDataset(dataset_test_path)
@@ -36,6 +36,10 @@ def test():
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,
                                epoch_stage1=args.epoch_stage1, epoch_stage2=args.epoch_stage2, logger=logger,
                                save_all=True)
+
+    print('Loading checkpoint...')
+    weight_path = get_latest_weight_path(args)
+    model_tester.load_model_weights(weight_path)
 
     start_time = time.time()
     model_tester.test(data_loader_test, args.epoch_total)
