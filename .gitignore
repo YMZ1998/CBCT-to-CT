@@ -9,6 +9,7 @@ __pycache__/
 *.trt
 *.txt
 *.onnx
+dist/
 # Distribution / packaging
 .Python
 .idea/

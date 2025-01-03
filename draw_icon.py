@@ -14,4 +14,6 @@ plt.savefig('cbct2ct_logo.png', transparent=False, bbox_inches='tight', pad_inch
 plt.show()
 
 png_image = Image.open('cbct2ct_logo.png')
-png_image.save('cbct2ct_logo.ico', format='ICO')
+
+high_res_sizes = [(256, 256), (128, 128), (64, 64)]
+png_image.save('cbct2ct_logo.ico', format='ICO', sizes=high_res_sizes)
