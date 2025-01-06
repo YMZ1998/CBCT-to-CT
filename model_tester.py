@@ -177,7 +177,7 @@ class ModelTester:
             for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):
 
                 images = images.to(self.device)
-                origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
+                origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [3, 1, 1, 1], dim=1)
                 mask.fill_(1.0)
                 stage1_out = self.stage1(origin_cbct * mask)
 

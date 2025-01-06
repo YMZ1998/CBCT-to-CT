@@ -56,11 +56,11 @@ def generate_2_5d_slices(image, index, length):
     :return: 5 层切片组成的数组
     """
     indices = [
-        max(0, index - 2),
+        # max(0, index - 2),
         max(0, index - 1),
         index,
         min(length - 1, index + 1),
-        min(length - 1, index + 2)
+        # min(length - 1, index + 2)
     ]
     return np.array([image[i] for i in indices])
 

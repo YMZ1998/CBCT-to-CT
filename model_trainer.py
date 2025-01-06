@@ -106,7 +106,7 @@ class ModelTrainer:
         for images, _ in data_loader_train:
 
             images = images.to(self.device)
-            origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
+            origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [3, 1, 1, 1], dim=1)
             mask.fill_(1.0)
             # Training Stage 1
             if current_stage == 1:
