@@ -178,7 +178,7 @@ class ModelTester:
 
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
-                # mask.fill_(1.0)
+                mask.fill_(1.0)
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:

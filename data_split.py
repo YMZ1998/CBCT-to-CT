@@ -29,7 +29,7 @@ if __name__ == '__main__':
     train_path = os.path.join(result_path, 'train')
     test_path = os.path.join(result_path, 'test')
 
-    paths = os.listdir(data_path)[:20]
+    paths = os.listdir(data_path)[:30]
     print(f"Total files: {len(paths)}")
 
     train, test = train_test_split(paths, test_size=0.2, random_state=42)

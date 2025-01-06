@@ -210,13 +210,17 @@ def check_dataset(anatomy):
 
 
 def generate_dataset(anatomy, shape):
+    save_path = './dataset'
+    for p in os.listdir(save_path):
+        if anatomy in os.path.join(save_path, p):
+            os.remove(os.path.join(save_path, p))
     generate_train_test_dataset(f'./data/{anatomy}/train', padding=shape, p=anatomy, t='train', interval=2,
-                                save_path='./dataset')
+                                save_path=save_path)
     generate_train_test_dataset(f'./data/{anatomy}/test', padding=shape, p=anatomy, t='test', interval=1,
-                                save_path='./dataset')
+                                save_path=save_path)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    # generate_dataset(args.anatomy, [args.image_size, args.image_size])
-    check_dataset(args.anatomy)
+    generate_dataset(args.anatomy, [args.image_size, args.image_size])
+    # check_dataset(args.anatomy)
