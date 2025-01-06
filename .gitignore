@@ -9,6 +9,8 @@ __pycache__/
 *.trt
 *.txt
 *.onnx
+*.nii.gz
+*.dcm
 dist/
 # Distribution / packaging
 .Python
