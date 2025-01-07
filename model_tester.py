@@ -61,7 +61,7 @@ class ModelTester:
         # 显示 CBCT 图像
         plt.subplot(2, 4, 1)
         plt.axis("off")
-        plt.imshow(show_cbct[2], cmap="gray")
+        plt.imshow(show_cbct[1], cmap="gray")
         plt.title("CBCT")
 
         # 显示原始 CT 图像
@@ -178,7 +178,7 @@ class ModelTester:
 
                 images = images.to(self.device)
                 origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [3, 1, 1, 1], dim=1)
-                mask.fill_(1.0)
+                # mask.fill_(1.0)
                 stage1_out = self.stage1(origin_cbct * mask)
 
                 if epoch <= self.epoch_stage1:
@@ -221,8 +221,7 @@ class ModelTester:
         with torch.no_grad():
             for iteration, (images, image_locations) in enumerate(tqdm(data_loader_test, file=sys.stdout)):
                 images = images.to(self.device)
-                origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [5, 1, 1, 1], dim=1)
-
+                origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [3, 1, 1, 1], dim=1)
                 # mask.fill_(1)
 
                 stage1_out = self.stage1(origin_cbct * mask)

@@ -29,8 +29,9 @@ def test():
     # resbranch.load_state_dict(checkpoint['model_resbranch'])
 
     print('Testing...')
+    num_workers = min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 8])
     dataset_test = CreateDataset(dataset_test_path)
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=num_workers,
                                                    pin_memory=True, drop_last=True)
 
     model_tester = ModelTester(stage1=stage1, stage2=stage2, resbranch=resbranch, device=device,

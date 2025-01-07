@@ -48,13 +48,6 @@ def window_transform(ct_array, window_width, window_center):
 
 
 def generate_2_5d_slices(image, index, length):
-    """
-    生成 2.5D 的 5 层切片。
-    :param image: 输入图像
-    :param index: 当前切片索引
-    :param length: 图像切片总数
-    :return: 5 层切片组成的数组
-    """
     indices = [
         # max(0, index - 2),
         max(0, index - 1),
@@ -185,13 +178,13 @@ def check_dataset(anatomy):
     images, image_locations = load_npz_data(f'./dataset/synthRAD_interval_1_{anatomy}_test_batch_1.npz')
     print("images shape:", images.shape)
     # origin_cbct, origin_ct, enhance_ct, mask = np.split(images, [5, 1, 1, 1], dim=1)
-    origin_cbct, origin_ct, enhance_ct, mask = np.split(images[100], [5, 6, 7], axis=0)
+    origin_cbct, origin_ct, enhance_ct, mask = np.split(images[100], [3, 4, 5], axis=0)
 
     plt.figure(figsize=(9, 3), dpi=100, tight_layout=True)
     # 显示 CBCT 图像
     plt.subplot(1, 3, 1)
     plt.axis("off")
-    plt.imshow(origin_cbct[2], cmap="gray")
+    plt.imshow(origin_cbct[1], cmap="gray")
     plt.title("CBCT")
 
     # 显示原始 CT 图像
@@ -222,5 +215,5 @@ def generate_dataset(anatomy, shape):
 
 if __name__ == '__main__':
     args = parse_args()
-    generate_dataset(args.anatomy, [args.image_size, args.image_size])
-    # check_dataset(args.anatomy)
+    # generate_dataset(args.anatomy, [args.image_size, args.image_size])
+    check_dataset(args.anatomy)

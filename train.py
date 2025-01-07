@@ -44,11 +44,12 @@ def train():
     lr_scheduler_resbranch = torch.optim.lr_scheduler.LambdaLR(optimizer_resbranch, lr_lambda=lf)
 
     print('Training...')
+    num_workers = min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 8])
     dataset_train = CreateDataset(dataset_train_path)
     data_loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True,
-                                                    num_workers=4, pin_memory=True, drop_last=True)
+                                                    num_workers=num_workers, pin_memory=True, drop_last=True)
     dataset_test = CreateDataset(dataset_test_path)
-    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=4,
+    data_loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=num_workers,
                                                    pin_memory=True, drop_last=True)
 
     criterion = MixedPix2PixLoss_mask(alpha=0.5).to(device)
@@ -85,13 +86,13 @@ def train():
         train_loss = model_trainer.train_one_epoch(data_loader_train, epoch)
         if epoch % 3 == 0:
             test_metrics = model_tester.test(data_loader_test, epoch)
-        if args.wandb:
-            wandb.log({
-                "train loss": train_loss,
-                "psnr": test_metrics['psnr'],
-                "ssim": test_metrics['ssim'],
-                "mae": test_metrics['mae']
-            })
+            if args.wandb:
+                wandb.log({
+                    "train loss": train_loss,
+                    "psnr": test_metrics['psnr'],
+                    "ssim": test_metrics['ssim'],
+                    "mae": test_metrics['mae']
+                })
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

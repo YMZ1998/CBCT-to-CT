@@ -45,11 +45,11 @@ def save_array_as_nii(array, file_path, reference=None):
 
 def generate_2_5d_slices(image, index, length):
     indices = [
-        max(0, index - 2),
+        # max(0, index - 2),
         max(0, index - 1),
         index,
         min(length - 1, index + 1),
-        min(length - 1, index + 2)
+        # min(length - 1, index + 2)
     ]
     return np.array([image[i] for i in indices])
 
@@ -87,7 +87,7 @@ def load_data(cbct_path, mask_path, shape):
     origin_mask = sitk.ReadImage(mask_path)
     mask_array = sitk.GetArrayFromImage(origin_mask)
     mask_array[mask_array > 0] = 1
-    mask_array.fill(1)
+    # mask_array.fill(1)
 
     # 如果CBCT尺寸大于目标尺寸，进行重采样
     if cbct_array.shape[1] > shape[0] or cbct_array.shape[2] > shape[1]:
@@ -223,7 +223,7 @@ def remove_and_create_dir(path):
 
 if __name__ == '__main__':
     # python CBCT2CT.py --cbct_path ./data/brain/test\2BA001\cbct.nii.gz --mask_path ./data/brain/test\2BA001\mask.nii.gz --result_path ./result --anatomy brain
-    # python CBCT2CT.py --cbct_path ./data/pelvis/test\2PA001\cbct.nii.gz --mask_path ./data/pelvis/test\2PA001\mask.nii.gz --result_path ./dist/result --anatomy pelvis
+    # python CBCT2CT.py --cbct_path ./data/pelvis/test\2PA010\cbct.nii.gz --mask_path ./data/pelvis/test\2PA010\mask.nii.gz --result_path ./dist/result --anatomy pelvis
     # python CBCT2CT.py --cbct_path ./dist/test_data/brain/cbct.nii.gz --mask_path ./dist/test_data/brain/mask.nii.gz --result_path ./dist/result --anatomy brain
     # CBCT2CT.exe  --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii.gz --result_path ./result --anatomy brain
     # CBCT2CT.exe --cbct_path ./test_data/brain/cbct.nii.gz --mask_path ./test_data/brain/mask.nii.gz --result_path ./result --anatomy brain
