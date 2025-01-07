@@ -55,7 +55,7 @@ def convert_onnx(args):
 
     # Create dummy input and mask
     batch_size = 1
-    x = torch.rand(batch_size, 5, args.image_size, args.image_size, requires_grad=True).to(device)
+    x = torch.rand(batch_size, 1, args.image_size, args.image_size, requires_grad=True).to(device)
     mask = torch.rand(batch_size, 1, args.image_size, args.image_size, requires_grad=True).to(device)
 
     # Perform forward pass with PyTorch

@@ -1,6 +1,7 @@
 import numpy as np
 from skimage import morphology
 from skimage.measure import label
+from skimage.filters import threshold_otsu
 
 
 def normalize(img, min_, max_):
@@ -9,18 +10,20 @@ def normalize(img, min_, max_):
 
 def getLargestCC(segmentation):
     labels = label(segmentation)
-    assert (labels.max() != 0)  # assume at least 1 CC
+    assert (labels.max() != 0)
     largestCC = labels == np.argmax(np.bincount(labels.flat)[1:]) + 1
     return largestCC
 
 
-def get_3d_mask(img, th=500, width=2):
+def get_3d_mask(img):
     mask = np.zeros(img.shape).astype(int)
-    mask[img > th] = 1
+    otsu_threshold = threshold_otsu(img)
+    # print(otsu_threshold,np.min(img) + 300)
+    mask[img > otsu_threshold] = 1
 
     mask = morphology.binary_opening(mask, )
 
-    remove_holes = morphology.remove_small_holes(mask, area_threshold=width ** 3)
+    remove_holes = morphology.remove_small_holes(mask, area_threshold=4)
 
     largest_cc = getLargestCC(remove_holes)
 
@@ -30,9 +33,12 @@ def get_3d_mask(img, th=500, width=2):
 if __name__ == '__main__':
     import SimpleITK as sitk
 
-    ct = sitk.ReadImage('./dist/test_data/brain/cbct.nii.gz')
+    case = 'brain'
+    # case='pelvis'
+
+    ct = sitk.ReadImage(f'./data/{case}.nii.gz')
     ct_array = sitk.GetArrayFromImage(ct)
     ct_array, mask = get_3d_mask(ct_array)
     mask = sitk.GetImageFromArray(mask)
     mask.CopyInformation(ct)
-    sitk.WriteImage(mask, './dist/test_data/brain/cbct_mask.nii.gz')
+    sitk.WriteImage(mask, f'./data/{case}_mask.nii.gz')

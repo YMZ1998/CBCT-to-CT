@@ -5,7 +5,7 @@ from torch.utils.data import TensorDataset
 
 from make_dataset import img_normalize, img_padding, window_transform, generate_2_5d_slices
 from model_tester import ModelTester
-from parse_args import get_device, parse_args, get_model, get_latest_weight_path
+from parse_args import get_device, parse_args, get_model, get_latest_weight_path, remove_and_create_dir
 from utils import *
 
 
@@ -36,6 +36,7 @@ def predict():
     shape = [args.image_size, args.image_size]
     data_path = f'./data/{args.anatomy}/test'
     case_path = [os.path.join(data_path, p) for p in os.listdir(data_path)][0]
+    # case_path = r'./data/test'
     print(case_path)
     cbct_path = os.path.join(case_path, 'cbct.nii.gz')
     ct_path = os.path.join(case_path, 'ct.nii.gz')
@@ -53,9 +54,9 @@ def predict():
         ct_vecs.append(ct_padded[index])
         enhance_ct_vecs.append(enhance_ct_padded[index])
         mask_vecs.append(mask_padded[index])
-    cbct_batch = np.array(cbct_vecs[:])
-    ct_batch = np.expand_dims(np.array(ct_vecs[:]), axis=1)
-    enhance_ct_batch = np.expand_dims(np.array(enhance_ct_vecs[:]), axis=1)
+    cbct_batch = np.array(cbct_vecs[:]).astype(np.float32)
+    ct_batch = np.expand_dims(np.array(ct_vecs[:]), axis=1).astype(np.float32)
+    enhance_ct_batch = np.expand_dims(np.array(enhance_ct_vecs[:]), axis=1).astype(np.float32)
     mask_batch = np.expand_dims(np.array(mask_vecs[:]), axis=1).astype(np.float32)
     locations_batch = np.concatenate(location_vecs[:], axis=0).astype(np.float32)
 
@@ -82,6 +83,8 @@ def predict():
 
     start_time = time.time()
     model_tester.predict(data_loader_test)
+    # remove_and_create_dir("./visualization")
+    # model_tester.test(data_loader_test, args.epoch_total)
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print("test time {}".format(total_time_str))
@@ -89,6 +92,8 @@ def predict():
 
 if __name__ == '__main__':
     from image_metrics import compute_val_metrics
+
+    remove_and_create_dir("./result")
 
     predict()
     compute_val_metrics()

@@ -106,9 +106,8 @@ class ModelTrainer:
         for images, _ in data_loader_train:
 
             images = images.to(self.device)
-            origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [3, 1, 1, 1], dim=1)
+            origin_cbct, origin_ct, enhance_ct, mask = torch.split(images, [1, 1, 1, 1], dim=1)
             # mask.fill_(1.0)
-            # Training Stage 1
             if current_stage == 1:
                 self.optimizer_stage1.zero_grad()
                 out_global = self.stage1(origin_cbct * mask)
@@ -120,7 +119,6 @@ class ModelTrainer:
                 self.optimizer_stage1.step()
 
 
-            # Training Stage 2
             elif current_stage == 2:
                 self.optimizer_stage2.zero_grad()
                 out_global = self.stage1(origin_cbct * mask)
@@ -133,7 +131,6 @@ class ModelTrainer:
                 loss_gb2.backward()
                 self.optimizer_stage2.step()
 
-            # Total Training
             else:
                 self.optimizer_stage1.zero_grad()
                 self.optimizer_stage2.zero_grad()
@@ -166,9 +163,7 @@ class ModelTrainer:
         #     best_loss = loss_gbs_v
         #     self.save_model(epoch, loss_gbs_v, weight_path=self.best_weight_path)
 
-        # 记录日志
-        log_str = f" train epoch: {epoch} loss_gb: {loss_gbs_v}"
-        self.logger.info(log_str)
+        self.logger.info(f" train epoch: {epoch} loss_gb: {loss_gbs_v}")
 
         return loss_gbs_v
 

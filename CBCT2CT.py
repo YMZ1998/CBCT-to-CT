@@ -46,9 +46,9 @@ def save_array_as_nii(array, file_path, reference=None):
 def generate_2_5d_slices(image, index, length):
     indices = [
         # max(0, index - 2),
-        max(0, index - 1),
+        # max(0, index - 1),
         index,
-        min(length - 1, index + 1),
+        # min(length - 1, index + 1),
         # min(length - 1, index + 2)
     ]
     return np.array([image[i] for i in indices])
@@ -225,6 +225,7 @@ if __name__ == '__main__':
     # python CBCT2CT.py --cbct_path ./data/brain/test\2BA001\cbct.nii.gz --mask_path ./data/brain/test\2BA001\mask.nii.gz --result_path ./result --anatomy brain
     # python CBCT2CT.py --cbct_path ./data/pelvis/test\2PA010\cbct.nii.gz --mask_path ./data/pelvis/test\2PA010\mask.nii.gz --result_path ./dist/result --anatomy pelvis
     # python CBCT2CT.py --cbct_path ./dist/test_data/brain/cbct.nii.gz --mask_path ./dist/test_data/brain/mask.nii.gz --result_path ./dist/result --anatomy brain
+    # python CBCT2CT.py --cbct_path ./dist/test_data/pelvis/cbct.nii.gz --mask_path ./dist/test_data/pelvis/mask.nii.gz --result_path ./dist/result --anatomy pelvis
     # CBCT2CT.exe  --cbct_path ./test_data/cbct.nii.gz --mask_path ./test_data/mask.nii.gz --result_path ./result --anatomy brain
     # CBCT2CT.exe --cbct_path ./test_data/brain/cbct.nii.gz --mask_path ./test_data/brain/mask.nii.gz --result_path ./result --anatomy brain
     # CBCT2CT.exe --cbct_path ./test_data/pelvis/cbct.nii.gz --mask_path ./test_data/pelvis/mask.nii.gz --result_path ./result --anatomy pelvis
@@ -239,6 +240,7 @@ if __name__ == '__main__':
     parser.add_argument('--cbct_path', type=str, required=True, help="Path to cbct file")
     parser.add_argument('--mask_path', type=str, required=True, help="Path to mask file")
     parser.add_argument('--result_path', type=str, required=True, help="Path to save results")
+    # parser.add_argument('--debug', type=bool, default=False, help="Debug options")
     args = parser.parse_args()
     print(args)
     val_onnx(args)

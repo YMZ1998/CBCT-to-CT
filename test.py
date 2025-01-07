@@ -6,13 +6,13 @@ import torch
 
 from make_dataset import CreateDataset
 from model_tester import ModelTester
-from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path
+from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path, remove_and_create_dir
 from utils import get_logger
 
 
 def test():
     args = parse_args()
-    check_dir(args)
+    remove_and_create_dir(args.visual_path)
     device = get_device()
     logger = get_logger(args.log_path)
 

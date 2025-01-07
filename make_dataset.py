@@ -50,9 +50,9 @@ def window_transform(ct_array, window_width, window_center):
 def generate_2_5d_slices(image, index, length):
     indices = [
         # max(0, index - 2),
-        max(0, index - 1),
+        # max(0, index - 1),
         index,
-        min(length - 1, index + 1),
+        # min(length - 1, index + 1),
         # min(length - 1, index + 2)
     ]
     return np.array([image[i] for i in indices])
@@ -178,28 +178,29 @@ def check_dataset(anatomy):
     images, image_locations = load_npz_data(f'./dataset/synthRAD_interval_1_{anatomy}_test_batch_1.npz')
     print("images shape:", images.shape)
     # origin_cbct, origin_ct, enhance_ct, mask = np.split(images, [5, 1, 1, 1], dim=1)
-    origin_cbct, origin_ct, enhance_ct, mask = np.split(images[100], [3, 4, 5], axis=0)
+    for i in range(0, images.shape[0], 5):
+        origin_cbct, origin_ct, enhance_ct, mask = np.split(images[i], [1, 2, 3], axis=0)
 
-    plt.figure(figsize=(9, 3), dpi=100, tight_layout=True)
-    # 显示 CBCT 图像
-    plt.subplot(1, 3, 1)
-    plt.axis("off")
-    plt.imshow(origin_cbct[1], cmap="gray")
-    plt.title("CBCT")
+        plt.figure(figsize=(9, 3), dpi=100, tight_layout=True)
+        # 显示 CBCT 图像
+        plt.subplot(1, 3, 1)
+        plt.axis("off")
+        plt.imshow(origin_cbct[0], cmap="gray")
+        plt.title("CBCT")
 
-    # 显示原始 CT 图像
-    plt.subplot(1, 3, 2)
-    plt.axis("off")
-    plt.imshow(origin_ct[0], cmap="gray")
-    plt.title("Original CT")
+        # 显示原始 CT 图像
+        plt.subplot(1, 3, 2)
+        plt.axis("off")
+        plt.imshow(origin_ct[0], cmap="gray")
+        plt.title("Original CT")
 
-    # 显示增强后的 CT 图像
-    plt.subplot(1, 3, 3)
-    plt.axis("off")
-    plt.imshow(enhance_ct[0], cmap="gray")
-    plt.title("Enhanced CT")
+        # 显示增强后的 CT 图像
+        plt.subplot(1, 3, 3)
+        plt.axis("off")
+        plt.imshow(enhance_ct[0], cmap="gray")
+        plt.title("Enhanced CT")
 
-    plt.show()
+        plt.show()
 
 
 def generate_dataset(anatomy, shape):
