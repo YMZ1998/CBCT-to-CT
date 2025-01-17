@@ -6,7 +6,7 @@ from torch.utils.data import TensorDataset
 from make_dataset import img_normalize, img_padding, window_transform, generate_2_5d_slices
 from model_tester import ModelTester
 from parse_args import get_device, parse_args, get_model, get_latest_weight_path, remove_and_create_dir
-from utils import *
+from utils.utils import *
 
 
 def load_data(cbct_path, ct_path, mask_path, shape):

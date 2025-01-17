@@ -7,7 +7,7 @@ import torch
 from make_dataset import CreateDataset
 from model_tester import ModelTester
 from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path, remove_and_create_dir
-from utils import get_logger
+from utils.utils import get_logger
 
 
 def test():

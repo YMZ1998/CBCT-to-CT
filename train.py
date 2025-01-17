@@ -11,7 +11,7 @@ from make_dataset import CreateDataset
 from model_tester import ModelTester
 from model_trainer import ModelTrainer
 from parse_args import get_device, parse_args, check_dir, get_model, get_latest_weight_path
-from utils import get_logger, MixedPix2PixLoss_mask
+from utils.utils import get_logger, MixedPix2PixLoss_mask
 
 
 def train():

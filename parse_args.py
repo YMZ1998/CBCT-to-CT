@@ -71,7 +71,7 @@ def get_model(args):
 
 
 def parse_args():
-    from utils import set_seed
+    from utils.utils import set_seed
     set_seed(3407)
     epoch_step = 50
 

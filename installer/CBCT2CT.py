@@ -94,7 +94,7 @@ def load_data(cbct_path, mask_path, shape):
         print("Resampling CBCT...")
         max_shape = max(cbct_array.shape[1], cbct_array.shape[2])
         # print("Max shape: ", max_shape)
-        cbct_array, img_location = img_padding(cbct_array, max_shape, max_shape, -1)
+        cbct_array, img_location = img_padding(cbct_array, max_shape, max_shape, np.min(cbct_array))
         padding_cbct = sitk.GetImageFromArray(cbct_array)
         padding_cbct.SetSpacing(original_spacing)
         # sitk.WriteImage(padding_cbct, os.path.join(args.result_path, "padding_cbct.nii.gz"))

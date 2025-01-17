@@ -92,7 +92,7 @@ def convert_onnx(args):
 
     # Save the ONNX model
     print(f"Model saved as ONNX to {onnx_file_name}.")
-    shutil.copy(onnx_file_name, f'./dist/checkpoint/{args.anatomy}.onnx')
+    shutil.copy(onnx_file_name, f'../installer/dist/checkpoint/{args.anatomy}.onnx')
 
 
 if __name__ == '__main__':
