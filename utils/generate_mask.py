@@ -17,13 +17,20 @@ def getLargestCC(segmentation):
 
 def get_3d_mask(img):
     mask = np.zeros(img.shape).astype(int)
+
     otsu_threshold = threshold_otsu(img)
-    # print(otsu_threshold,np.min(img) + 300)
+
     mask[img > otsu_threshold] = 1
 
-    mask = morphology.binary_opening(mask, )
+    selem = morphology.ball(3)
 
-    remove_holes = morphology.remove_small_holes(mask, area_threshold=4)
+    mask = morphology.binary_dilation(mask, selem)
+    mask = morphology.binary_dilation(mask, selem)
+    mask = morphology.binary_erosion(mask, selem)
+    mask = morphology.binary_dilation(mask, selem)
+    mask = morphology.binary_dilation(mask, selem)
+
+    remove_holes = morphology.remove_small_holes(mask, area_threshold=500)
 
     largest_cc = getLargestCC(remove_holes)
 
@@ -34,7 +41,7 @@ if __name__ == '__main__':
     import SimpleITK as sitk
 
     case = 'brain'
-    # case='pelvis'
+    # case = 'pelvis'
 
     ct = sitk.ReadImage(f'./data/{case}.nii.gz')
     ct_array = sitk.GetArrayFromImage(ct)

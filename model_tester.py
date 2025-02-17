@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from image_metrics import ImageMetrics
 from parse_args import remove_and_create_dir
-from post_process import post_process
+from utils.post_process import post_process
 
 plt.switch_backend('agg')
 
@@ -42,12 +42,6 @@ class ModelTester:
         self.resbranch.load_state_dict(checkpoint['model_resbranch'])
     def save_visualization(self, epoch, iteration, metrics, show_cbct, show_origin_ct, show_stage1_out,
                            mask, show_enhanced_ct, show_stage2_out=None, show_stage3_out=None, show_final_out=None):
-        # print("show_cbct", np.min(show_cbct), np.max(show_cbct))
-        # print("show_origin_ct", np.min(show_origin_ct), np.max(show_origin_ct))
-        # print("show_stage1_out", np.min(show_stage1_out), np.max(show_stage1_out))
-        # print("show_stage2_out", np.min(show_stage2_out), np.max(show_stage2_out))
-        # print("show_stage3_out", np.min(show_stage3_out), np.max(show_stage3_out))
-        # print("mask", np.min(mask), np.max(mask))
         fig = plt.figure(figsize=(9, 6), dpi=100, tight_layout=True)
         fig.suptitle(f'epoch {epoch} psnr: {metrics["psnr"]:.4f} ssim: {metrics["ssim"]:.4f} mae:{metrics["mae"]:.4f}')
 
