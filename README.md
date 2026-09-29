@@ -79,7 +79,7 @@ conda env create -f env.yml
 ```
 
 ```bash
-conda activate lj_py
+conda activate cbct2ct
 ```
 
 ```bash
